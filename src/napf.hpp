@@ -2,11 +2,8 @@
 
 #include <nanoflann.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
 
-namespace py = pybind11;
-
+namespace napf {
 /*
  * 
  *
@@ -94,9 +91,8 @@ public:
 
 };
 
-/* Incase you don't have time to write the `SplineLib` */
 template<size_t dim, unsigned int metric, typename VSCCloud>
-using SLCoordTree = nanoflann::KDTreeSingleIndexAdaptor<
+using SplineLibCoordinatesTree = nanoflann::KDTreeSingleIndexAdaptor<
     std::conditional_t<
       (metric == 1),
       nanoflann::L1_Adaptor<T, VSCCloud>,
@@ -106,7 +102,7 @@ using SLCoordTree = nanoflann::KDTreeSingleIndexAdaptor<
     dim>;
 
 template<size_t dim, unsigned int metric, typename VSCCloud>
-using SLCoordHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
+using SplinelibCoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     std::conditional_t<
       (metric == 1),
       nanoflann::L1_Adaptor<double, VSCCloud>,
@@ -115,13 +111,16 @@ using SLCoordHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     VSCCloud,
     dim>;
 
+/* Incase you don't have time to write the `SplineLib` */
+template<size_t dim, unsigned int metric, typename VSCCloud>
+using SLCoordTree = SplineLibCoordinatesTree<dim, metric, VSCCloud>;
+
+template<size_t dim, unsigned int metric, typename VSCCloud>
+using SLCoordHighDimTree = SplineLibCoordinatesHighDimTree<
+    dim,
+    metric,
+    VSCCloud>;
+
 #endif 
 
-
-
-template<typename T, size_t dim, unsigned int metric, typename TreeT>
-class KDT {
-public:
-
-
-};
+}; /* namespace */
