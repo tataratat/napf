@@ -1,0 +1,3 @@
+include src/*.hpp
+include src/python/*.hpp
+include third_party/*.hpp

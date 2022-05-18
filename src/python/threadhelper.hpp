@@ -11,6 +11,12 @@ void nthread_execution(
     IndexT& total,
     IndexT& nthread
 ) {
+  // if nthread == 1, don't even bother creating thread
+  if (nthread == 1) {
+    f(0, total);
+    return;
+  }
+
   // get chunk size and prepare threads
   const IndexT chunk_size = std::ceil(total / nthread);
   std::vector<std::thread> tpool;
@@ -22,7 +28,7 @@ void nthread_execution(
   {
     // last one
     tpool.emplace_back(
-        std::thread{f, (nthread - 2) * chunk_size, total};
+        std::thread{f, (nthread - 2) * chunk_size, total}
     );
   }
 
