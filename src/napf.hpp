@@ -89,7 +89,7 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     IndexT>;
 
 
-#ifdef SPLINELIB
+#ifdef SPLINELIBEXT
 template<typename VSCoords /* std::vector<VectorSpace::Coordinate>*/,
          typename IndexT,
          int dim>
