@@ -9,9 +9,11 @@ __version__ = "0.0.0"
 
 ext_modules = [
     Pybind11Extension(
-        "napf",
+        "napf._napf",
         [
             "src/python/classes/int_trees.cpp",
+            "src/python/classes/long_trees.cpp",
+            "src/python/classes/float_trees.cpp",
             "src/python/classes/double_trees.cpp",
             "src/python/napf.cpp",
         ],
@@ -32,6 +34,7 @@ setup(
     url="https://github.com/tataratat/napf",
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
+    packages=["napf"],
     package_data={ # didn't do much. so added MANIFEST.in
         "src" : ["*.hpp", "python/*.hpp"],
         "third_party" : ["*.hpp"]
