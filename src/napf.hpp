@@ -46,26 +46,26 @@ private:
  * metric: distance matric
  *  1 -> L1, 2 -> L2
  */
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
+template<typename datat,
+         typename distt,
+         typename indext,
          int dim,
          unsigned int metric>
-using RawPtrTree = nanoflann::KDTreeSingleIndexAdaptor<
+using rawptrtree = nanoflann::kdtreesingleindexadaptor<
     typename std::conditional<
-      (metric == 1),
-      nanoflann::L1_Adaptor<DataT,
-                            RawPtrCloud<DataT, IndexT, dim>,
-                            DistT,
-                            IndexT>,
-      nanoflann::L2_Simple_Adaptor<DataT,
-                                   RawPtrCloud<DataT, IndexT, dim>,
-                                   DistT,
-                                   IndexT>
+        (metric == 1),
+        nanoflann::l1_adaptor<datat,
+                              rawptrcloud<datat, indext, dim>,
+                              distt,
+                              indext>,
+        nanoflann::l2_simple_adaptor<datat,
+                                     rawptrcloud<datat, indext, dim>,
+                                     distt,
+                                     indext>
     >::type,
-    RawPtrCloud<DataT, IndexT, dim>,
+    rawptrcloud<datat, indext, dim>,
     dim,
-    IndexT>;
+    indext>;
 
 template<typename DataT,
          typename DistT,
@@ -74,15 +74,15 @@ template<typename DataT,
          unsigned int metric>
 using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
-      (metric == 1),
-      nanoflann::L1_Adaptor<DataT,
-                            RawPtrCloud<DataT, IndexT, dim>,
-                            DistT,
-                            IndexT>,
-      nanoflann::L2_Adaptor<DataT,
-                            RawPtrCloud<DataT, IndexT, dim>,
-                            DistT,
-                            IndexT>
+        (metric == 1),
+        nanoflann::L1_Adaptor<DataT,
+                              RawPtrCloud<DataT, IndexT, dim>,
+                              DistT,
+                              IndexT>,
+        nanoflann::L2_Adaptor<DataT,
+                              RawPtrCloud<DataT, IndexT, dim>,
+                              DistT,
+                              IndexT>
     >::type,
     RawPtrCloud<DataT, IndexT, dim>,
     dim,
@@ -90,7 +90,9 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
 
 
 #ifdef SPLINELIB
-template<typename VSCoords /* std::vector<VectorSpace::Coordinate>*/>
+template<typename VSCoords /* std::vector<VectorSpace::Coordinate>*/,
+         typename IndexT,
+         int dim>
 struct VSCoordCloud {
 public:
   const VSCoords& points_;
@@ -106,7 +108,7 @@ public:
   }
 
   // Since the type is hardcoded in splinelib, here too.
-  inline double& kdtree_get_pt(const size_t id, const size_t dim) const {
+  inline double& kdtree_get_pt(const IndexT id, const IndexT dim) const {
     return pts()[id][dim];
   }
 
@@ -116,36 +118,77 @@ public:
 
 };
 
-template<size_t dim, unsigned int metric, typename VSCCloud>
+template<typename DataT,
+         typename DistT,
+         typename IndexT,
+         size_t dim,
+         unsigned int metric,
+         typename VSCCloud>
 using SplineLibCoordinatesTree = nanoflann::KDTreeSingleIndexAdaptor<
-    std::conditional_t<
-      (metric == 1),
-      nanoflann::L1_Adaptor<T, VSCCloud>,
-      nanoflann::L2_Simple_Adaptor<T, VSCCloud>
-    >,
+    typename std::conditional<
+        (metric == 1),
+        nanoflann::L1_Adaptor<DataT,
+                              VSCCloud,
+                              DistT,
+                              IndexT>,
+        nanoflann::L2_Simple_Adaptor<DataT,
+                                     VSCCloud,
+                                     DistT,
+                                     IndexT>
+    >::type,
     VSCCloud,
-    dim>;
+    dim,
+    IndexT>;
 
-template<size_t dim, unsigned int metric, typename VSCCloud>
+
+template<typename DataT,
+         typename DistT,
+         typename IndexT,
+         size_t dim,
+         unsigned int metric,
+         typename VSCCloud>
 using SplinelibCoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
-    std::conditional_t<
-      (metric == 1),
-      nanoflann::L1_Adaptor<double, VSCCloud>,
-      nanoflann::L2_Adaptor<double, VSCCloud>
-    >,
+    typename std::conditional<
+        (metric == 1),
+        nanoflann::L1_Adaptor<DataT,
+                              VSCCloud,
+                              DistT,
+                              IndexT>,
+        nanoflann::L2_Adaptor<DataT,
+                              VSCCloud,
+                              DistT,
+                              IndexT>
+    >::type,
     VSCCloud,
-    dim>;
+    dim,
+    IndexT>;
 
 /* Incase you don't have time to write the `SplineLib` */
-template<size_t dim, unsigned int metric, typename VSCCloud>
-using SLCoordTree = SplineLibCoordinatesTree<dim, metric, VSCCloud>;
+template<typename DataT,
+         typename DistT,
+         typename IndexT,
+         size_t dim,
+         unsigned int metric,
+         typename VSCCloud>
+using SLCTree = SplineLibCoordinatesTree<DataT,
+                                         DistT,
+                                         IndexT,
+                                         dim,
+                                         metric,
+                                         VSCCloud>;
 
-template<size_t dim, unsigned int metric, typename VSCCloud>
-using SLCoordHighDimTree = SplineLibCoordinatesHighDimTree<
-    dim,
-    metric,
-    VSCCloud>;
-
+template<typename DataT,
+         typename DistT,
+         typename IndexT,
+         size_t dim,
+         unsigned int metric,
+         typename VSCCloud>
+using SLCHDTree = SplineLibCoordinatesHighDimTree<DataT,
+                                                  DistT,
+                                                  IndexT,
+                                                  dim,
+                                                  metric,
+                                                  VSCCloud>;
 #endif 
 
 }; /* namespace */
