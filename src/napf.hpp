@@ -46,26 +46,27 @@ private:
  * metric: distance matric
  *  1 -> L1, 2 -> L2
  */
-template<typename datat,
-         typename distt,
-         typename indext,
-         int dim,
+template<typename DataT,
+         typename DistT,
+         typename IndexT,
+         size_t dim,
          unsigned int metric>
-using rawptrtree = nanoflann::kdtreesingleindexadaptor<
+using RawPtrTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
-        nanoflann::l1_adaptor<datat,
-                              rawptrcloud<datat, indext, dim>,
-                              distt,
-                              indext>,
-        nanoflann::l2_simple_adaptor<datat,
-                                     rawptrcloud<datat, indext, dim>,
-                                     distt,
-                                     indext>
+        nanoflann::L1_Adaptor<DataT,
+                              RawPtrCloud<DataT, IndexT, dim>,
+                              DistT,
+                              IndexT>,
+        nanoflann::L2_Adaptor<DataT,
+                              RawPtrCloud<DataT, IndexT, dim>,
+                              DistT,
+                              IndexT>
     >::type,
-    rawptrcloud<datat, indext, dim>,
+    RawPtrCloud<DataT, IndexT, dim>,
     dim,
-    indext>;
+    IndexT>;
+
 
 template<typename DataT,
          typename DistT,
