@@ -91,7 +91,7 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
 
 
 #ifdef SPLINELIBEXT
-template<typename VSCoords /* std::vector<VectorSpace::Coordinate>*/,
+template<typename VSCoords /* std::map<int, VectorSpace::Coordinate>*/,
          typename IndexT,
          int dim>
 struct VSCoordCloud {
@@ -109,8 +109,8 @@ public:
   }
 
   // Since the type is hardcoded in splinelib, here too.
-  inline double& kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
-    return pts()[id][q_dim];
+  inline const double& kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
+    return pts().at(id)[q_dim].Get();
   }
 
   // everyone does it
