@@ -99,7 +99,7 @@ public:
   const VSCoords& points_;
 
   VSCoordCloud(const VSCoords& vscoords) :
-      points_(points) {}
+      points_(vscoords) {}
 
   // CRTP helper method
   inline const VSCoords& pts() const {return points_;}
@@ -109,8 +109,8 @@ public:
   }
 
   // Since the type is hardcoded in splinelib, here too.
-  inline double& kdtree_get_pt(const IndexT id, const IndexT dim) const {
-    return pts()[id][dim];
+  inline double& kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
+    return pts()[id][q_dim];
   }
 
   // everyone does it
@@ -148,7 +148,7 @@ template<typename DataT,
          size_t dim,
          unsigned int metric,
          typename VSCCloud>
-using SplinelibCoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
+using SplineLibCoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
         nanoflann::L1_Adaptor<DataT,
