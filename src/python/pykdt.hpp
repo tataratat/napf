@@ -72,9 +72,6 @@ public:
     cloud_ = std::unique_ptr<Cloud>(new Cloud(tree_data_ptr_, datalen_));
     tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_));
 
-    // build tree
-    tree_->buildIndex();
-
   }
 
   /* given query points, returns indices and distances*/ 
