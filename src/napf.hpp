@@ -91,26 +91,27 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
 
 
 #ifdef SPLINELIBEXT
-template<typename VSCoords /* std::map<int, VectorSpace::Coordinate>*/,
+template<typename VSCoords /* std::unique_ptr<VectorSpace::Coordinate[]>*/,
          typename IndexT,
          int dim>
 struct VSCoordCloud {
 public:
   const VSCoords& points_;
+  const IndexT size_;
 
-  VSCoordCloud(const VSCoords& vscoords) :
-      points_(vscoords) {}
+  VSCoordCloud(const VSCoords& vscoords, const IndexT size) :
+      points_(vscoords), size_(size) {}
 
   // CRTP helper method
   inline const VSCoords& pts() const {return points_;}
 
   inline size_t kdtree_get_point_count() const {
-    return pts().size();
+    return size_;
   }
 
   // Since the type is hardcoded in splinelib, here too.
   inline const double& kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
-    return pts().at(id)[q_dim].Get();
+    return pts()[id][q_dim].Get();
   }
 
   // everyone does it
