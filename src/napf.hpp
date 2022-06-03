@@ -96,6 +96,8 @@ template<typename VSCoords /* std::unique_ptr<VectorSpace::Coordinate[]>*/,
          int dim>
 struct VSCoordCloud {
 public:
+  using CoordT_ = typename VSCoords;
+
   const VSCoords& points_;
   const IndexT size_;
 
