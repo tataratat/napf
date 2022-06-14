@@ -75,7 +75,9 @@ public:
     // maybe can check if shape[1] matches dim here
 
     // prepare cloud and tree
-    cloud_ = std::unique_ptr<Cloud>(new Cloud(tree_data_ptr_, datalen_));
+    cloud_ = std::unique_ptr<Cloud>(
+      new Cloud(tree_data_ptr_, static_cast<IndexT>(t_buf.size))
+    );
     tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_));
 
   }
@@ -98,21 +100,34 @@ public:
     py::buffer_info d_buf = dist.request();
     DistT* d_buf_ptr = static_cast<DistT *>(d_buf.ptr);
 
+    if (kneighbors > static_cast<int>(datalen_)) {
+      std::cout << "WARNING - "
+                << "kneighbors (" << kneighbors
+                << ") is bigger than number of tree data (" << datalen_
+                << "! "
+                << "Returning arrays `[:, " << datalen_ - kneighbors
+                << ":]` entries will be filled with random indices."
+                << std::endl;
+
+    }
+
     // prepare routine in lambda so that it can be executed with nthreads
     auto searchknn = [&] (int begin, int end) {
       for (int i{begin}; i < end; i++) {
-        tree_->knnSearch(&q_buf_ptr[i],
+        const int j{i * static_cast<int>(dim)};
+        const int k{i * kneighbors};
+        tree_->knnSearch(&q_buf_ptr[j],
                          kneighbors,
-                         &i_buf_ptr[i],
-                         &d_buf_ptr[i]);
+                         &i_buf_ptr[k],
+                         &d_buf_ptr[k]);
       }
     };
 
     // don't worry, if nthread == 1, we don't create threads.
     nthread_execution(searchknn, qlen, nthread);
 
-    indices.resize({qlen, kneighbors});
-    dist.resize({qlen, kneighbors});
+    indices = indices.reshape({qlen, kneighbors});
+    dist = dist.reshape({qlen, kneighbors});
 
     return py::make_tuple(indices, dist);
   }
@@ -143,10 +158,11 @@ public:
         // prepare input
         std::vector<std::pair<IndexT, DistT>> matches;
         nanoflann::SearchParams params;
-        params.sorted = return_sorted; 
+        params.sorted = return_sorted;
 
+        const int j{i * static_cast<int>(dim)};
         // call
-        const auto nmatches = tree_->radiusSearch(&q_buf_ptr[i],
+        const auto nmatches = tree_->radiusSearch(&q_buf_ptr[j],
                                                   radius,
                                                   matches,
                                                   params);
@@ -215,8 +231,9 @@ public:
         nanoflann::SearchParams params;
         params.sorted = return_sorted; 
 
+        const int j{i * static_cast<int>(dim)};
         // call
-        const auto nmatches = tree_->radiusSearch(&q_buf_ptr[i],
+        const auto nmatches = tree_->radiusSearch(&q_buf_ptr[j],
                                                   r_buf_ptr[i],
                                                   matches,
                                                   params);
