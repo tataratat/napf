@@ -78,6 +78,240 @@ def core_class_str(tree_data, metric):
     return f"KDT{data_t}D{dim}L{metric}"
 
 
+class _KDT:
+    """
+    Helper class to set default nthread and add documentations.
+    """
+    __slots__ = [
+        "_core_tree",
+        "_nthread",
+    ]
+
+    def __init__(self, tree_data, metric=1, nthread=1):
+        """
+        _KDT init. Given tree_data, creates corresponding core kdt class.
+        Tree is initialized using `newtree()`.
+
+        Attributes
+        -----------
+        core_tree: napf.core.KDT*
+        tree_data: (n, d) np.ndarray
+          {double, float, int, long}
+          Readonly tree data. saved with `newtree()`
+        nthread: int
+          Default value for nthreads.
+
+        Parameters
+        -----------
+        tree_data: (n, d) np.ndarray
+          {double, float, int, long}
+        """
+        self.newtree(tree_data, metric)
+        self.nthread = nthread
+
+    @property
+    def nthread(self):
+        """
+        Returns saved default value for nthread.
+
+        Parameters
+        -----------
+        None
+
+        Returns
+        --------
+        nthread: int
+        """
+        return self._nthread
+
+    @nthread.setter
+    def nthread(self, nthread_):
+        """
+        Sets default value for nthread.
+
+        Parameters
+        -----------
+        nthread_: int
+
+        Returns
+        --------
+        None
+        """
+        self._nthread = nthread_
+
+    @property
+    def core_tree(self):
+        """
+        Returns initialized core tree, if there's any.
+
+        Parameters
+        -----------
+        None
+
+        Returns
+        --------
+        core_tree: napf.core.KDT*
+        """
+        if hasattr(self, "_core_tree"):
+            return self._core_tree
+
+        else:
+            return None
+
+    @property
+    def tree_data(self):
+        """
+        Returns data used to initialize core tree. Read only
+
+        Parameters
+        -----------
+        None
+
+        Returns
+        --------
+        tree_data: (n, d) np.ndarray
+          {double, float, int, long}
+        """
+        coretree = self.core_tree
+        if coretree is not None:
+            return coretree.tree_data
+
+        else:
+            return None
+
+    def newtree(self, tree_data, metric=1):
+        """
+        Given 2D array-like tree_data, it:
+          1. makes sure data is a contiguous array
+          2. builds a corresponding kdt.
+        Note that core kdt objects also have `newtree()` function with the same
+        parameters, and build a new kdt each time it is called.
+
+        Parameters
+        -----------
+        tree_data: (n, d) np.ndarray
+          {double, float, int, long}
+        """
+        tdata = np.ascontiguousarray(tree_data)
+        core_cls = core_class_str(tdata, metric) # checks and raises error
+        # we can call newtree() function of the core class,
+        # if _core_tree already exists.
+        # However, creating a new kdt should not add significant overhead.
+        self._core_tree = eval(f"core.{core_cls}(tdata)")
+
+    def knn_search(self, queries, kneighbors, nthread=None):
+        """
+        k-nearest-neighbor search.
+
+        Parameters
+        -----------
+        queires: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        kneighbors: int
+        nthread: int
+          Default is None and will use self.nthread.
+
+        Returns
+        --------
+        ids_and_distances: tuple
+          ((m, kneighbors) np.ndarray - uint ids,
+           (m, kneighbors) np.ndarray - double dists)
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.knn_search(queries, kneighbors, nthread)
+
+    def query(self, queries, nthread=None):
+        """
+        scipy-like KDTree query call.
+        Same as `knn_search(queries, 1, nthreads)`
+
+        Parameters
+        -----------
+        queries: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        nthread: int
+          Default is None and will use self.nthread.
+
+        Returns
+        --------
+        ids_and_distances: tuple
+          ((m, 1) np.ndarray - uint ids,
+           (m, 1) np.ndarray - double dists)
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.query(queries, nthread)
+
+    def radius_search(self, queries, radius, return_sorted, nthread=None):
+        """
+        Searches for neighbors in given radius.
+
+        Parameters
+        -----------
+        queries: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        radius: float
+        return_sorted: bool
+        nthread: int
+          Default is None and will use self.nthread
+
+        Returns
+        --------
+        ids_and_distances: tuple 
+          ((m, 1) np.ndarray - uint ids,
+           (m, 1) np.ndarray - double dists)
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.radius_search(
+            queries,
+            radius,
+            return_sorted,
+            nthread,
+        )
+
+    def radii_search(self, queries, radii, return_sorted, nthread=None):
+        """
+        Similar to `radius_search`, but you can specify radius for each query.
+
+        Parameters
+        -----------
+        queries: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        radii: (m,) np.ndarray
+        return_sorted: bool
+        nthread: int
+          Default is None and will use self.nthread
+
+        Returns
+        --------
+        ids_and_distances: tuple 
+          ((m, 1) np.ndarray - uint ids,
+           (m, 1) np.ndarray - double dists)
+        """
+        # input size check
+        if len(queries) != len(radii):
+            raise ValueError(
+                f"Input size mismatch between queires ({len(queries)}) "
+                f" and radii ({len(radii)})."
+                "They should be the same."
+            )
+
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.radii_search(
+            queries,
+            radii,
+            return_sorted,
+            nthread,
+        )
+
+
 def KDT(tree_data, metric=1):
     """
     Factory like initializer for KDT.
@@ -100,6 +334,6 @@ def KDT(tree_data, metric=1):
     core_obj: KDT{data_t}D{dim}L{metric}
     """
     tdata = np.ascontiguousarray(tree_data)
-    corecls = core_class_str(tdata, metric)
 
-    return eval(f"core.{corecls}(tdata)")
+    return _KDT(tdata, metric)
+
