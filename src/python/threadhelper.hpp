@@ -28,7 +28,7 @@ void nthread_execution(
   {
     // last one
     tpool.emplace_back(
-        std::thread{f, (nthread - 2) * chunk_size, total}
+        std::thread{f, (nthread - 1) * chunk_size, total}
     );
   }
 
