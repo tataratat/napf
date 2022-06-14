@@ -31,7 +31,13 @@ class PyKDT {
 public:
 
   // let's fix some datatype.
-  using DistT = double;
+  //   distance is always double, unless DataT is float
+  //   index is always unsigned int
+  using DistT = typename std::conditional<
+    std::is_same<DataT, float>::value,
+    float,
+    double
+  >::type;
   using IndexT = unsigned int;
 
   using Tree = TreeT<DataT, DistT, IndexT, dim, metric>;
@@ -254,8 +260,12 @@ void add_kdt_pyclass(py::module& m, const char *class_name) {
   klasse.def(py::init<>())
         .def(py::init<py::array_t<T>>(),
                  py::arg("tree_data"))
-        .def_readwrite("tree_data",
+        .def_readonly("tree_data",
                            &KDT::tree_data_)
+        .def_readonly("dim",
+                           &KDT::dim_)
+        .def_readonly("metric",
+                           &KDT::metric_)
         .def("newtree",
                  &KDT::newtree,
                  py::arg("tree_data"))
