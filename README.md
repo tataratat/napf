@@ -8,5 +8,23 @@ Currently, the combinations of following options are supported:
 - `data dimension`: {__1__, __2__, __3__, __4__, __5__, __6__, __7__, __8__, __9__, __10__}
 - `distance metric`: {__L1__, __L2__}
 
+### quick start
+```python
+import napf
+import numpy as np
+
+data = <data in 2D array>
+queries = <search points in 2D array>
+
+kdt = napf.KDT(tree_data=data, metric=1)
+
+indices, distances = kdt.knn_search(
+    queries=queries,
+    kneighbors=3,
+    nthread=4,
+)
+...
+```
+
 ## fortran
 maybe...
