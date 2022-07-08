@@ -112,7 +112,8 @@ public:
   }
 
   // Since the type is hardcoded in splinelib, here too.
-  inline const double& kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
+  inline const double& kdtree_get_pt(const IndexT id,
+                                     const IndexT q_dim) const {
     return pts()[id][q_dim].Get();
   }
 
