@@ -14,7 +14,7 @@ import napf
 import numpy as np
 
 data = <data in 2D array>
-queries = <search points in 2D array>
+queries = <query points in 2D array>
 
 kdt = napf.KDT(tree_data=data, metric=1)
 
