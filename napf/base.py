@@ -55,7 +55,7 @@ def core_class_str(tree_data, metric):
 
     Returns
     --------
-    core_class_str
+    core_class_str: str
     """
     arr = np.asanyarray(tree_data)
     dtypestr = str(arr.dtype)
