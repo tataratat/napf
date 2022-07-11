@@ -7,7 +7,7 @@ endif()
 # options
 option(BUILD_EXAMPLES "build examples" ON)
 option(BUILD_FORTRAN_MODULE "build fortran module" ON)
-option(SPLINELIB_EXT "add splinelib extension" ON)
+option(SPLINEPY_EXT "add splinepy extension" ON)
 
 # config
 set(exe_dest "bin")
@@ -45,9 +45,9 @@ if(BUILD_EXAMPLES)
   message("*** ------ NOT IMPLEMENTED ----------- ***")
 endif(BUILD_EXAMPLES)
 
-if(SPLINELIB_EXT)
-  target_compile_definitions(napf INTERFACE -DSPLINELIBEXT)
-endif(SPLINELIB_EXT)
+if(SPLINEPY_EXT)
+  target_compile_definitions(napf INTERFACE -DSPLINEPYEXT)
+endif(SPLINEPY_EXT)
 
 # configure config files
 include(CMakePackageConfigHelpers)
