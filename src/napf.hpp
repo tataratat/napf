@@ -90,31 +90,36 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     IndexT>;
 
 
-#ifdef SPLINELIBEXT
-template<typename VSCoords /* std::unique_ptr<VectorSpace::Coordinate[]>*/,
+#ifdef SPLINEPYEXT
+// CoordinatesT : std::unique_ptr<
+//                        std::vector<std::array<CoordinateValueT, dim>>
+//                > 
+template<typename CoordinatesT,
          typename IndexT,
          int dim>
-struct VSCoordCloud {
+struct CoordinatesCloud {
 public:
-  using CoordT_ = typename VSCoords;
+  using CoordnatesT_ = CoordinatesT;
+  using IndexT_ = IndexT;
 
-  const VSCoords& points_;
+  const CoordinatesT& points_;
   const IndexT size_;
 
-  VSCoordCloud(const VSCoords& vscoords, const IndexT size) :
-      points_(vscoords), size_(size) {}
+  CoordinatesCloud(const CoordinatesT& coords, const IndexT size) :
+                   points_(coords), size_(size) {}
 
   // CRTP helper method
-  inline const VSCoords& pts() const {return points_;}
+  inline const CoordinatesT& pts() const {return points_;}
 
   inline size_t kdtree_get_point_count() const {
     return size_;
   }
 
   // Since the type is hardcoded in splinelib, here too.
-  inline const double& kdtree_get_pt(const IndexT id,
-                                     const IndexT q_dim) const {
-    return pts()[id][q_dim].Get();
+  inline const double kdtree_get_pt(const IndexT id,
+                                    const IndexT q_dim) const {
+    // cast here to allow both SplineLib and BezMan coordinates types.
+    return static_cast<double>(pts()[id][q_dim]);
   }
 
   // everyone does it
@@ -128,20 +133,20 @@ template<typename DataT,
          typename IndexT,
          size_t dim,
          unsigned int metric,
-         typename VSCCloud>
-using SplineLibCoordinatesTree = nanoflann::KDTreeSingleIndexAdaptor<
+         typename CoordinatesCloudT>
+using CoordinatesTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
         nanoflann::L1_Adaptor<DataT,
-                              VSCCloud,
+                              CoordinatesCloudT,
                               DistT,
                               IndexT>,
         nanoflann::L2_Simple_Adaptor<DataT,
-                                     VSCCloud,
+                                     CoordinatesCloudT,
                                      DistT,
                                      IndexT>
     >::type,
-    VSCCloud,
+    CoordinatesCloudT,
     dim,
     IndexT>;
 
@@ -151,49 +156,22 @@ template<typename DataT,
          typename IndexT,
          size_t dim,
          unsigned int metric,
-         typename VSCCloud>
-using SplineLibCoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
+         typename CoordinatesCloudT>
+using CoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
         nanoflann::L1_Adaptor<DataT,
-                              VSCCloud,
+                              CoordinatesCloudT,
                               DistT,
                               IndexT>,
         nanoflann::L2_Adaptor<DataT,
-                              VSCCloud,
+                              CoordinatesCloudT,
                               DistT,
                               IndexT>
     >::type,
-    VSCCloud,
+    CoordinatesCloudT,
     dim,
     IndexT>;
-
-/* Incase you don't have time to write the `SplineLib` */
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric,
-         typename VSCCloud>
-using SLCTree = SplineLibCoordinatesTree<DataT,
-                                         DistT,
-                                         IndexT,
-                                         dim,
-                                         metric,
-                                         VSCCloud>;
-
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric,
-         typename VSCCloud>
-using SLCHDTree = SplineLibCoordinatesHighDimTree<DataT,
-                                                  DistT,
-                                                  IndexT,
-                                                  dim,
-                                                  metric,
-                                                  VSCCloud>;
 #endif 
 
 }; /* namespace */
