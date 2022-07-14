@@ -100,7 +100,7 @@ template<typename CoordinatesT,
 struct CoordinatesCloud {
 public:
   using CoordnatesT_ = CoordinatesT;
-  using IndexT_ = IndexT,
+  using IndexT_ = IndexT;
 
   const CoordinatesT& points_;
   const IndexT size_;
