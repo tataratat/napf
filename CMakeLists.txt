@@ -32,7 +32,7 @@ target_include_directories(napf
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
         $<INSTALL_INTERFACE:${incl_dest}>)
-set_target_properties(napf PROPERTIES CXX_STANDARD 11)
+target_compile_features(napf INTERFACE cxx_std_11)
 #target_compile_options(napf PRIVATE -O3) # everyone can enjoy optimization
 
 if(BUILD_FORTRAN_MODULE)
