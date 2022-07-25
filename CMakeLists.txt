@@ -25,7 +25,7 @@ set(namespace "${PROJECT_NAME}::")
 set(CXX_HEADERS src/napf.hpp third_party/nanoflann.hpp)
 
 # Interface Library, since it's header only lib
-add_library(napf INTERFACE ${CXX_HEADERS})
+add_library(napf INTERFACE)
 add_library(napf::napf ALIAS napf)
 target_include_directories(napf
     INTERFACE
