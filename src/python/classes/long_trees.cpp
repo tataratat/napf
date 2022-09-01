@@ -21,5 +21,4 @@ void init_long_trees(py::module_& m) {
   add_kdt_pyclass<long, 9, 2>(m, "KDTlD9L2");
   add_kdt_pyclass<long, 10, 1>(m, "KDTlD10L1");
   add_kdt_pyclass<long, 10, 2>(m, "KDTlD10L2");
-
 }
