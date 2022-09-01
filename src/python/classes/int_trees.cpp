@@ -21,5 +21,4 @@ void init_int_trees(py::module_& m) {
   add_kdt_pyclass<int, 9, 2>(m, "KDTiD9L2");
   add_kdt_pyclass<int, 10, 1>(m, "KDTiD10L1");
   add_kdt_pyclass<int, 10, 2>(m, "KDTiD10L2");
-
 }
