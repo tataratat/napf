@@ -87,7 +87,7 @@ class _KDT:
         "_nthread",
     ]
 
-    def __init__(self, tree_data, metric=1, nthread=1):
+    def __init__(self, tree_data, metric=2, nthread=1):
         """
         _KDT init. Given tree_data, creates corresponding core kdt class.
         Tree is initialized using `newtree()`.
@@ -237,13 +237,16 @@ class _KDT:
         Returns
         --------
         ids_and_distances: tuple
-          ((m, 1) np.ndarray - uint ids,
-           (m, 1) np.ndarray - double dists)
+          ((m, 1) np.ndarray - double dists,)
+           (m, 1) np.ndarray - uint ids)
         """
         if nthread is None:
             nthread = self.nthread
 
-        return self.core_tree.query(queries, nthread)
+        results = self.core_tree.query(queries, nthread)
+
+        # TODO: scipy returns (dist, ind). adapt this in c++ side
+        return (results[1], results[0])
 
     def radius_search(self, queries, radius, return_sorted, nthread=None):
         """
@@ -312,7 +315,7 @@ class _KDT:
         )
 
 
-def KDT(tree_data, metric=1):
+def KDT(tree_data, metric=2):
     """
     Factory like initializer for KDT.
     `napf` is implemented as template, thus, there are separate classes
@@ -327,7 +330,9 @@ def KDT(tree_data, metric=1):
     tree_data: (n, dim) np.ndarray
       Default is None. double or int.
     metric: int or str
-      Default is 1. Valid options are {1, l1, L1, 2, l2, L2}.
+      Default is 2 and distance will be a squared euklidian distance.
+      Valid options are {1, l1, L1, 2, l2, L2}.
+      
 
     Returns
     --------
