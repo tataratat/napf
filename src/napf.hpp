@@ -76,7 +76,7 @@ using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
 
 #ifdef SPLINEPYEXT
 // CoordinatesT : std::unique_ptr<
-//                        std::vector<std::array<CoordinateValueT, dim>>
+//                    std::array<CoordinateValueT, dim>[] or CoordinateValueT[]
 //                >
 template<typename CoordinatesT, typename IndexT, int dim>
 struct CoordinatesCloud {
@@ -98,8 +98,14 @@ public:
 
   // Since the type is hardcoded in splinelib, here too.
   inline double kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
+    // scalar beziers are special, apparently
+    if constexpr (std::is_scalar<typename CoordinatesT::element_type>::value) {
+      return pts()[id];
+    } else {
+
     // cast here to allow both SplineLib and BezMan coordinates types.
     return static_cast<double>(pts()[id][q_dim]);
+    }
   }
 
   // everyone does it
