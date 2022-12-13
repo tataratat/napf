@@ -29,6 +29,7 @@ jobs:
     - name: Build package with ubuntu 20.04
       if: (matrix.os == 'ubuntu-20.04' && matrix.python-version == '3.7')
       run: |
+        pip install numpy
         python setup.py install
         python -m unittest discover
       
