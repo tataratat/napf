@@ -28,7 +28,7 @@ jobs:
     
     - name: Build package with ubuntu 20.04
       if: (matrix.os == 'ubuntu-20.04' && matrix.python-version == '3.7')
-      run: python setup.py develop
+      run: python setup.py install
       
     - name: Build package with ubuntu 22.04
       if: (matrix.os != 'ubuntu-20.04' && matrix.python-version != '3.7')
