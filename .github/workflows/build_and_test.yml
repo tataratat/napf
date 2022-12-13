@@ -26,7 +26,7 @@ jobs:
         pip install setuptools wheel
         pip install pybind11
     
-    - name: Build package with ubuntu 20.04
+    - name: Build napf
       run: |
         pip install numpy
         python setup.py develop
