@@ -27,7 +27,7 @@ jobs:
         pip install pybind11
     
     - name: Build package with ubuntu 20.04
-      if: (matrix.os == 'ubuntu-20.04' && matrix.python-version == "3.7")
+      if: (matrix.os == 'ubuntu-20.04' && matrix.python-version == '3.7')
       run: python setup.py develop
       
     - name: Build package with ubuntu 22.04
