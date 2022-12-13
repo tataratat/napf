@@ -1,8 +1,7 @@
 name: install and testing
 
 on:
-  push:
-    branches: ["main", "ft-add-ci"]
+  push
 
 jobs:
   build_and_test:
