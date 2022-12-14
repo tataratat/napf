@@ -25,6 +25,7 @@ jobs:
         pip install numpy
         pip install setuptools wheel
         pip install pybind11
+        pip install pytest
     
     - name: Build napf
       run: |
@@ -32,4 +33,4 @@ jobs:
         python setup.py develop
 
     - name: Test
-      run: python -m unittest discover
+      run: pytest tests
