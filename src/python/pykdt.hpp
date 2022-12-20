@@ -69,7 +69,7 @@ public:
     tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_));
   }
 
-  /* given query points, returns indices and distances*/
+  /* given query points, returns indices and distances */
   py::tuple knn_search(const py::array_t<DataT> qpts,
                        const int kneighbors,
                        const int nthread) {
@@ -111,10 +111,10 @@ public:
     // don't worry, if nthread == 1, we don't create threads.
     nthread_execution(searchknn, qlen, nthread);
 
-    indices = indices.reshape({qlen, kneighbors});
-    dist = dist.reshape({qlen, kneighbors});
+    indices.resize({qlen, kneighbors});
+    dist.resize({qlen, kneighbors});
 
-    return py::make_tuple(indices, dist);
+    return py::make_tuple(dist, indices);
   }
 
   /* scipy KDTree style query */
