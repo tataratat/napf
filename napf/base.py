@@ -82,10 +82,10 @@ class _KDT:
     """
     Helper class to set default nthread and add documentations.
     """
-    __slots__ = [
+    __slots__ = (
         "_core_tree",
         "_nthread",
-    ]
+    )
 
     def __init__(self, tree_data, metric=2, nthread=1):
         """
@@ -214,8 +214,8 @@ class _KDT:
         Returns
         --------
         ids_and_distances: tuple
-          ((m, kneighbors) np.ndarray - uint ids,
-           (m, kneighbors) np.ndarray - double dists)
+          ((m, kneighbors) np.ndarray - double dists,)
+           (m, kneighbors) np.ndarray - uint ids)
         """
         if nthread is None:
             nthread = self.nthread
@@ -243,10 +243,8 @@ class _KDT:
         if nthread is None:
             nthread = self.nthread
 
-        results = self.core_tree.query(queries, nthread)
+        return self.core_tree.query(queries, nthread)
 
-        # TODO: scipy returns (dist, ind). adapt this in c++ side
-        return (results[1], results[0])
 
     def radius_search(self, queries, radius, return_sorted, nthread=None):
         """
