@@ -56,6 +56,7 @@ setup(
     install_requires=[
         "numpy",
     ],
+    extras_require={"test": ["pytest>=6.0"]},
     zip_safe=False,
     license="MIT"
 )
