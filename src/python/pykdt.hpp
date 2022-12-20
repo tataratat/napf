@@ -131,17 +131,18 @@ public:
     const py::buffer_info q_buf = qpts.request();
     const DataT* q_buf_ptr = static_cast<DataT*>(q_buf.ptr);
     const int qlen = q_buf.shape[0];
+    nanoflann::SearchParameters params;
+    params.sorted = return_sorted;
 
     // out
     py::list indices;
     py::list dist;
 
+
     auto searchradius = [&](int begin, int end) {
       for (int i{begin}; i < end; i++) {
         // prepare input
-        std::vector<std::pair<IndexT, DistT>> matches;
-        nanoflann::SearchParams params;
-        params.sorted = return_sorted;
+        std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
 
         const int j{i * static_cast<int>(dim)};
         // call
@@ -199,6 +200,10 @@ public:
       return py::tuple{};
     }
 
+    nanoflann::SearchParameters params;
+    params.sorted = return_sorted;
+
+
     // out
     py::list indices;
     py::list dist;
@@ -206,9 +211,7 @@ public:
     auto searchradius = [&](int begin, int end) {
       for (int i{begin}; i < end; i++) {
         // prepare input
-        std::vector<std::pair<IndexT, DistT>> matches;
-        nanoflann::SearchParams params;
-        params.sorted = return_sorted;
+        std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
 
         const int j{i * static_cast<int>(dim)};
         // call
