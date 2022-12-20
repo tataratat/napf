@@ -57,7 +57,7 @@ def core_class_str(tree_data, metric):
     --------
     core_class_str: str
     """
-    arr = np.asanyarray(tree_data)
+    arr = np.asanyarray(tree_data, dtype=getattr(tree_data, "dtype", None))
     dtypestr = str(arr.dtype)
     if dtypestr not in np2napf_dtypes:
         raise TypeError(
