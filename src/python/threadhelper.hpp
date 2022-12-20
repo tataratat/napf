@@ -13,7 +13,7 @@ void nthread_execution(Func& f, IndexT& total, IndexT& nthread) {
   }
 
   // get chunk size and prepare threads
-  const IndexT chunk_size = std::ceil(total / nthread);
+  const IndexT chunk_size = (total + nthread - 1) / nthread;
   std::vector<std::thread> tpool;
   tpool.reserve(nthread);
 
