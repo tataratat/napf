@@ -1,8 +1,7 @@
 name: build full and pypi upload
 
 on:
-  push:
-    branches: [ "main" , "cleanup-and-v++"]
+  push
 
 jobs:
   wheel_build_full:
