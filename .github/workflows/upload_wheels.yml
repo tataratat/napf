@@ -9,7 +9,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-20.04]
 
     steps:
     - uses: actions/checkout@v3
@@ -28,8 +28,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-        name: artifact
-        path: dist
+          name: artifact
+          path: dist
 
       - uses: pypa/gh-action-pypi-publish@v1.6.1
         with:
