@@ -5,7 +5,7 @@ from setuptools import setup
 with open("README.md", "r") as f:
     readme = f.read()
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 ext_modules = [
     Pybind11Extension(
@@ -48,12 +48,15 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
         'Natural Language :: English',
         'Topic :: Scientific/Engineering'
     ],
     install_requires=[
         "numpy",
     ],
+    extras_require={"test": ["pytest>=6.0"]},
     zip_safe=False,
     license="MIT"
 )
