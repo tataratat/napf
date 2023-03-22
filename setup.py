@@ -1,8 +1,7 @@
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
 
-
-with open("README.md", "r") as f:
+with open("README.md") as f:
     readme = f.read()
 
 __version__ = "0.0.2"
@@ -27,7 +26,7 @@ ext_modules = [
 setup(
     name="napf",
     version=__version__,
-    description="(unofficial) `nanoflann` bindings for python and fortran.",
+    description="nanoflann python bindings for kdtree.",
     long_description=readme,
     long_description_content_type="text/markdown",
     author="Jaewook Lee",
@@ -36,27 +35,26 @@ setup(
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     packages=["napf"],
-    package_data={ # didn't do much. so added MANIFEST.in
-        "src" : ["*.hpp", "python/*.hpp"],
-        "third_party" : ["*.hpp"]
-    }, 
+    package_data={  # didn't do much. so added MANIFEST.in
+        "src": ["*.hpp", "python/*.hpp"],
+        "third_party": ["*.hpp"],
+    },
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Natural Language :: English',
-        'Topic :: Scientific/Engineering'
+        "Development Status :: 2 - Pre-Alpha",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Natural Language :: English",
+        "Topic :: Scientific/Engineering",
     ],
     install_requires=[
         "numpy",
     ],
-    extras_require={"test": ["pytest>=6.0"]},
     zip_safe=False,
-    license="MIT"
+    license="MIT",
 )
