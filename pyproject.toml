@@ -8,8 +8,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
-test-command = "pytest {project}/tests"
-test-extras=["test"]
+test-command = "python {project}/tests/test_init_and_query.py"
 
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]

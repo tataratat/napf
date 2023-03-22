@@ -1,12 +1,12 @@
 import numpy as np
 
-from napf import _napf as core
+from napf import _napf as core  # noqa: F401
 
 np2napf_dtypes = {
-    "int32" : "i",
-    "int64" : "l",
-    "float32" : "f",
-    "float64" : "d",
+    "int32": "i",
+    "int64": "l",
+    "float32": "f",
+    "float64": "d",
 }
 
 
@@ -34,7 +34,7 @@ def validate_metric_input(metric):
         m = int(mstr[-1])
         assert m in [1, 2]
 
-    except:
+    except BaseException:
         raise ValueError(
             "KDT only supports 1 or 2 (alternatively 'L1' or 'L2') "
             "as metric input."
@@ -60,9 +60,7 @@ def core_class_str(tree_data, metric):
     arr = np.asanyarray(tree_data, dtype=getattr(tree_data, "dtype", None))
     dtypestr = str(arr.dtype)
     if dtypestr not in np2napf_dtypes:
-        raise TypeError(
-            f"Sorry, `napf` does not support ({dtypestr}) dtypes."
-        )
+        raise TypeError(f"Sorry, `napf` does not support ({dtypestr}) dtypes.")
 
     if arr.ndim != 2:
         raise ValueError(
@@ -74,7 +72,7 @@ def core_class_str(tree_data, metric):
     data_t = np2napf_dtypes[dtypestr]
     dim = arr.shape[1]
     metric = validate_metric_input(metric)
-    
+
     return f"KDT{data_t}D{dim}L{metric}"
 
 
@@ -82,6 +80,7 @@ class _KDT:
     """
     Helper class to set default nthread and add documentations.
     """
+
     __slots__ = (
         "_core_tree",
         "_nthread",
@@ -193,7 +192,7 @@ class _KDT:
           {double, float, int, long}
         """
         tdata = np.ascontiguousarray(tree_data)
-        core_cls = core_class_str(tdata, metric) # checks and raises error
+        core_cls = core_class_str(tdata, metric)  # checks and raises error
         # we can call newtree() function of the core class,
         # if _core_tree already exists.
         # However, creating a new kdt should not add significant overhead.
@@ -245,7 +244,6 @@ class _KDT:
 
         return self.core_tree.query(queries, nthread)
 
-
     def radius_search(self, queries, radius, return_sorted, nthread=None):
         """
         Searches for neighbors in given radius.
@@ -261,7 +259,7 @@ class _KDT:
 
         Returns
         --------
-        ids_and_distances: tuple 
+        ids_and_distances: tuple
           ((m, 1) np.ndarray - uint ids,
            (m, 1) np.ndarray - double dists)
         """
@@ -290,7 +288,7 @@ class _KDT:
 
         Returns
         --------
-        ids_and_distances: tuple 
+        ids_and_distances: tuple
           ((m, 1) np.ndarray - uint ids,
            (m, 1) np.ndarray - double dists)
         """
@@ -330,7 +328,7 @@ def KDT(tree_data, metric=2):
     metric: int or str
       Default is 2 and distance will be a squared euklidian distance.
       Valid options are {1, l1, L1, 2, l2, L2}.
-      
+
 
     Returns
     --------
@@ -339,4 +337,3 @@ def KDT(tree_data, metric=2):
     tdata = np.ascontiguousarray(tree_data)
 
     return _KDT(tdata, metric)
-

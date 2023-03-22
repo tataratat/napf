@@ -21,4 +21,24 @@ void init_float_trees(py::module_& m) {
   add_kdt_pyclass<float, 9, 2>(m, "KDTfD9L2");
   add_kdt_pyclass<float, 10, 1>(m, "KDTfD10L1");
   add_kdt_pyclass<float, 10, 2>(m, "KDTfD10L2");
+  add_kdt_pyclass<float, 11, 1>(m, "KDTfD11L1");
+  add_kdt_pyclass<float, 11, 2>(m, "KDTfD11L2");
+  add_kdt_pyclass<float, 12, 1>(m, "KDTfD12L1");
+  add_kdt_pyclass<float, 12, 2>(m, "KDTfD12L2");
+  add_kdt_pyclass<float, 13, 1>(m, "KDTfD13L1");
+  add_kdt_pyclass<float, 13, 2>(m, "KDTfD13L2");
+  add_kdt_pyclass<float, 14, 1>(m, "KDTfD14L1");
+  add_kdt_pyclass<float, 14, 2>(m, "KDTfD14L2");
+  add_kdt_pyclass<float, 15, 1>(m, "KDTfD15L1");
+  add_kdt_pyclass<float, 15, 2>(m, "KDTfD15L2");
+  add_kdt_pyclass<float, 16, 1>(m, "KDTfD16L1");
+  add_kdt_pyclass<float, 16, 2>(m, "KDTfD16L2");
+  add_kdt_pyclass<float, 17, 1>(m, "KDTfD17L1");
+  add_kdt_pyclass<float, 17, 2>(m, "KDTfD17L2");
+  add_kdt_pyclass<float, 18, 1>(m, "KDTfD18L1");
+  add_kdt_pyclass<float, 18, 2>(m, "KDTfD18L2");
+  add_kdt_pyclass<float, 19, 1>(m, "KDTfD19L1");
+  add_kdt_pyclass<float, 19, 2>(m, "KDTfD19L2");
+  add_kdt_pyclass<float, 20, 1>(m, "KDTfD20L1");
+  add_kdt_pyclass<float, 20, 2>(m, "KDTfD20L2");
 }

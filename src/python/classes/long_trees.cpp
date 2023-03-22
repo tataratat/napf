@@ -21,4 +21,24 @@ void init_long_trees(py::module_& m) {
   add_kdt_pyclass<int64_t, 9, 2>(m, "KDTlD9L2");
   add_kdt_pyclass<int64_t, 10, 1>(m, "KDTlD10L1");
   add_kdt_pyclass<int64_t, 10, 2>(m, "KDTlD10L2");
+  add_kdt_pyclass<int64_t, 11, 1>(m, "KDTlD11L1");
+  add_kdt_pyclass<int64_t, 11, 2>(m, "KDTlD11L2");
+  add_kdt_pyclass<int64_t, 12, 1>(m, "KDTlD12L1");
+  add_kdt_pyclass<int64_t, 12, 2>(m, "KDTlD12L2");
+  add_kdt_pyclass<int64_t, 13, 1>(m, "KDTlD13L1");
+  add_kdt_pyclass<int64_t, 13, 2>(m, "KDTlD13L2");
+  add_kdt_pyclass<int64_t, 14, 1>(m, "KDTlD14L1");
+  add_kdt_pyclass<int64_t, 14, 2>(m, "KDTlD14L2");
+  add_kdt_pyclass<int64_t, 15, 1>(m, "KDTlD15L1");
+  add_kdt_pyclass<int64_t, 15, 2>(m, "KDTlD15L2");
+  add_kdt_pyclass<int64_t, 16, 1>(m, "KDTlD16L1");
+  add_kdt_pyclass<int64_t, 16, 2>(m, "KDTlD16L2");
+  add_kdt_pyclass<int64_t, 17, 1>(m, "KDTlD17L1");
+  add_kdt_pyclass<int64_t, 17, 2>(m, "KDTlD17L2");
+  add_kdt_pyclass<int64_t, 18, 1>(m, "KDTlD18L1");
+  add_kdt_pyclass<int64_t, 18, 2>(m, "KDTlD18L2");
+  add_kdt_pyclass<int64_t, 19, 1>(m, "KDTlD19L1");
+  add_kdt_pyclass<int64_t, 19, 2>(m, "KDTlD19L2");
+  add_kdt_pyclass<int64_t, 20, 1>(m, "KDTlD20L1");
+  add_kdt_pyclass<int64_t, 20, 2>(m, "KDTlD20L2");
 }
