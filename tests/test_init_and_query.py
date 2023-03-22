@@ -8,7 +8,7 @@ import numpy as np
 class InitAndQueryTest(unittest.TestCase):
 
     def test_init_and_query(self):
-        dims = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        dims = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         data_type = ["float64", "float32", "int64", "int32"]
         metric = [1, 2]
 
@@ -25,6 +25,8 @@ class InitAndQueryTest(unittest.TestCase):
 
             # init test
             qname = type(kdt.core_tree).__qualname__
+            print(dt)
+            print(kdt.core_tree.tree_data.dtype)
             assert kdt.core_tree.dim == d,\
                 f"wrong dim init for {qname}"
             assert kdt.core_tree.tree_data.dtype == dt,\
