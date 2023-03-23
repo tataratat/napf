@@ -1,10 +1,19 @@
+import platform
+
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
 
 with open("README.md") as f:
     readme = f.read()
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
+
+flags = {}
+if platform.system().startswith("Windows"):
+    flags["extra_compile_args"] = ["/O2"]
+else:
+    flags["extra_compile_args"] = ["-O3"]
+    flags["libraries"] = ["stdc++"]
 
 ext_modules = [
     Pybind11Extension(
@@ -17,9 +26,8 @@ ext_modules = [
             "src/python/napf.cpp",
         ],
         include_dirs=["third_party"],
-        extra_compile_args=["-O3"],
         cxx_std=11,
-        libraries=["stdc++"],
+        **flags
     )
 ]
 
