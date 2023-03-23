@@ -13,3 +13,6 @@ test-command = "python {project}/tests/test_init_and_query.py"
 [tool.cibuildwheel.macos]
 archs = ["x86_64", "arm64"]
 test-skip = ["*arm64"]
+
+[tool.cibuildwheel.windows]
+skip = "pp*"
