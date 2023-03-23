@@ -8,8 +8,12 @@ with open("README.md") as f:
 
 __version__ = "0.0.3"
 
-opt_flag = ["-O3", "/O2"][int(platform.system().startswith("Windows"))]
-std_lib = ["stdc++", ""][int(platform.system().startswith("Windows"))]
+flags = {}
+if platform.system().startswith("Windows"):
+    flags["extra_compile_args"] = ["/O2"]
+else:
+    flags["extra_compile_args"] = ["-O3"]
+    flags["libraries"] = ["stdc++"]
 
 ext_modules = [
     Pybind11Extension(
@@ -22,9 +26,8 @@ ext_modules = [
             "src/python/napf.cpp",
         ],
         include_dirs=["third_party"],
-        extra_compile_args=[opt_flag],
         cxx_std=11,
-        libraries=[std_lib],
+        **flags
     )
 ]
 
