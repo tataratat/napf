@@ -7,6 +7,7 @@ from napf.base import (
     np2napf_dtypes,
     validate_metric_input,
 )
+from napf._version import version as __version__
 
 __all__ = [
     "_napf",
@@ -16,4 +17,5 @@ __all__ = [
     "validate_metric_input",
     "core_class_str_and_data",
     "KDT",
+    "__version__",
 ]

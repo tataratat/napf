@@ -6,7 +6,8 @@ from setuptools import setup
 with open("README.md") as f:
     readme = f.read()
 
-__version__ = "0.0.3"
+with open("napf/_version.py") as f:
+    version = eval(f.read().strip().split("=")[-1])
 
 flags = {}
 if platform.system().startswith("Windows"):
@@ -33,7 +34,7 @@ ext_modules = [
 
 setup(
     name="napf",
-    version=__version__,
+    version=version,
     description="nanoflann python bindings for kdtree.",
     long_description=readme,
     long_description_content_type="text/markdown",
