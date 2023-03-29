@@ -43,7 +43,31 @@ def validate_metric_input(metric):
     return m
 
 
-def core_class_str(tree_data, metric):
+def enforce_contiguous(array, dtype=None):
+    """
+    If input is an instance / subclass of np.ndarray, this will check
+    if they are configuous. If so, returns same object, else turns makes it
+    contiguous and returns.
+
+    Parameters
+    ----------
+    array: array-like
+
+    Returns
+    -------
+    contiguous_array: array-like
+    """
+    if isinstance(array, np.ndarray):
+        if array.flags["C_CONTIGUOUS"] and (
+            dtype is None or dtype is array.dtype
+        ):
+            return array
+        return np.ascontiguousarray(array, dtype=dtype)
+
+    return array
+
+
+def core_class_str_and_data(tree_data, metric):
     """
     Returns class name of current setting.
     Also checks if it is valid dtype.
@@ -56,8 +80,11 @@ def core_class_str(tree_data, metric):
     Returns
     --------
     core_class_str: str
+    core_class_data: (n, dim) np.ndarray
     """
-    arr = np.asanyarray(tree_data, dtype=getattr(tree_data, "dtype", None))
+    arr = enforce_contiguous(
+        tree_data, dtype=getattr(tree_data, "dtype", None)
+    )
     dtypestr = str(arr.dtype)
     if dtypestr not in np2napf_dtypes:
         raise TypeError(f"Sorry, `napf` does not support ({dtypestr}) dtypes.")
@@ -73,7 +100,7 @@ def core_class_str(tree_data, metric):
     dim = arr.shape[1]
     metric = validate_metric_input(metric)
 
-    return f"KDT{data_t}D{dim}L{metric}"
+    return f"KDT{data_t}D{dim}L{metric}", arr
 
 
 class _KDT:
@@ -84,6 +111,7 @@ class _KDT:
     __slots__ = (
         "_core_tree",
         "_nthread",
+        "_dtype",
     )
 
     def __init__(self, tree_data, metric=2, nthread=1):
@@ -178,7 +206,14 @@ class _KDT:
         else:
             return None
 
-    def newtree(self, tree_data, metric=1):
+    @property
+    def dtype(self):
+        """
+        Returns dtype of current tree
+        """
+        return self._dtype
+
+    def newtree(self, tree_data, metric=2):
         """
         Given 2D array-like tree_data, it:
           1. makes sure data is a contiguous array
@@ -191,12 +226,14 @@ class _KDT:
         tree_data: (n, d) np.ndarray
           {double, float, int, long}
         """
-        tdata = np.ascontiguousarray(tree_data)
-        core_cls = core_class_str(tdata, metric)  # checks and raises error
+        core_cls, tdata = core_class_str_and_data(
+            tree_data, metric
+        )  # checks and raises error
         # we can call newtree() function of the core class,
         # if _core_tree already exists.
         # However, creating a new kdt should not add significant overhead.
         self._core_tree = eval(f"core.{core_cls}(tdata)")
+        self._dtype = tdata.dtype
 
     def knn_search(self, queries, kneighbors, nthread=None):
         """
@@ -219,7 +256,9 @@ class _KDT:
         if nthread is None:
             nthread = self.nthread
 
-        return self.core_tree.knn_search(queries, kneighbors, nthread)
+        return self.core_tree.knn_search(
+            enforce_contiguous(queries, self.dtype), kneighbors, nthread
+        )
 
     def query(self, queries, nthread=None):
         """
@@ -242,7 +281,9 @@ class _KDT:
         if nthread is None:
             nthread = self.nthread
 
-        return self.core_tree.query(queries, nthread)
+        return self.core_tree.query(
+            enforce_contiguous(queries, self.dtype), nthread
+        )
 
     def radius_search(self, queries, radius, return_sorted, nthread=None):
         """
@@ -267,7 +308,7 @@ class _KDT:
             nthread = self.nthread
 
         return self.core_tree.radius_search(
-            queries,
+            enforce_contiguous(queries, self.dtype),
             radius,
             return_sorted,
             nthread,
@@ -304,8 +345,8 @@ class _KDT:
             nthread = self.nthread
 
         return self.core_tree.radii_search(
-            queries,
-            radii,
+            enforce_contiguous(queries, self.dtype),
+            enforce_contiguous(radii, self.dtype),
             return_sorted,
             nthread,
         )
