@@ -1,13 +1,13 @@
 from napf import _napf
 from napf import _napf as core
 from napf import base
+from napf._version import version as __version__
 from napf.base import (
     KDT,
     core_class_str_and_data,
     np2napf_dtypes,
     validate_metric_input,
 )
-from napf._version import version as __version__
 
 __all__ = [
     "_napf",

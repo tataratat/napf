@@ -103,8 +103,8 @@ public:
       return pts()[id];
     } else {
 
-    // cast here to allow both SplineLib and BezMan coordinates types.
-    return static_cast<double>(pts()[id][q_dim]);
+      // cast here to allow both SplineLib and BezMan coordinates types.
+      return static_cast<double>(pts()[id][q_dim]);
     }
   }
 

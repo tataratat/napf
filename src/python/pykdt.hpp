@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -135,12 +136,23 @@ public:
     params.sorted = return_sorted;
 
     // out
-    py::list indices;
-    py::list dist;
+    py::list out_indices{}, out_dist{};
+    std::vector<py::list> indices(nthread);
+    std::vector<py::list> dist(nthread);
+    const int chunk_size = (qlen + nthread - 1) / nthread;
 
+    auto searchradius = [&](int start, int) {
+      const int start_index = start * chunk_size;
+      const int end_index = std::min((start + 1) * chunk_size, qlen);
+      const int n_queries = end_index - start_index;
 
-    auto searchradius = [&](int begin, int end) {
-      for (int i{begin}; i < end; i++) {
+      auto& this_indices = indices[start];
+      this_indices = py::list(n_queries);
+      auto& this_dist = dist[start];
+      this_dist = py::list(n_queries);
+
+      int l{}; // for list element id
+      for (int i{start_index}; i < end_index; i++) {
         // prepare input
         std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
 
@@ -159,20 +171,102 @@ public:
         DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
 
         // unpack and fill output
-        for (int i{0}; i < (int) nmatches; i++) {
-          i_buf_ptr[i] = matches[i].first;
-          d_buf_ptr[i] = matches[i].second;
+        for (int k{}; k < (int) nmatches; ++k) {
+          i_buf_ptr[k] = matches[k].first;
+          d_buf_ptr[k] = matches[k].second;
         }
 
-        // append to return list
-        indices.append(ids);
-        dist.append(ds);
+        this_indices[l] = ids;
+        this_dist[l] = ds;
+        ++l;
       }
     };
 
-    nthread_execution(searchradius, qlen, nthread);
+    nthread_execution(searchradius, nthread, nthread);
 
-    return py::make_tuple(indices, dist);
+    for (int i{}; i < nthread; ++i) {
+      out_indices += indices[i];
+      out_dist += dist[i];
+    }
+
+    return py::make_tuple(out_indices, out_dist);
+  }
+
+  /// @brief
+  /// @param qpts
+  /// @param radius
+  /// @param return_sorted here, sort is based on ids, not distance
+  /// @param nthread
+  /// @return
+  py::list query_ball_point(const py::array_t<DataT> qpts,
+                            const DistT radius,
+                            const bool return_sorted,
+                            const int nthread) {
+
+    using PairType = nanoflann::ResultItem<IndexT, DistT>;
+
+    // in
+    const py::buffer_info q_buf = qpts.request();
+    const DataT* q_buf_ptr = static_cast<DataT*>(q_buf.ptr);
+    const int qlen = q_buf.shape[0];
+    // we don't need distance based sorting
+    nanoflann::SearchParameters params;
+    params.sorted = false;
+
+    // out
+    py::list out_indices{};
+    std::vector<py::list> indices(nthread);
+    const int chunk_size = (qlen + nthread - 1) / nthread;
+
+    auto searchradius = [&](int start, int) {
+      const int start_index = start * chunk_size;
+      const int end_index = std::min((start + 1) * chunk_size, qlen);
+      const int n_queries = end_index - start_index;
+
+      auto& this_indices = indices[start];
+      this_indices = py::list(n_queries);
+
+      int l{}; // for list element id
+      for (int i{start_index}; i < end_index; i++) {
+        // prepare input
+        std::vector<PairType> matches;
+
+        const int j{i * static_cast<int>(dim)};
+        // call
+        const auto nmatches =
+            tree_->radiusSearch(&q_buf_ptr[j], radius, matches, params);
+
+        // prepare output
+        py::array_t<IndexT> ids(nmatches);
+        py::buffer_info i_buf = ids.request();
+        IndexT* i_buf_ptr = static_cast<IndexT*>(i_buf.ptr);
+
+        // sort ids
+        if (return_sorted) {
+          std::sort(matches.begin(),
+                    matches.end(),
+                    [](const PairType& a, const PairType& b) {
+                      return a.first < b.first;
+                    });
+        }
+
+        // unpack and fill output
+        for (int k{}; k < (int) nmatches; ++k) {
+          i_buf_ptr[k] = matches[k].first;
+        }
+
+        this_indices[l] = ids;
+        ++l;
+      }
+    };
+
+    nthread_execution(searchradius, nthread, nthread);
+
+    for (auto& ind : indices) {
+      out_indices += ind;
+    }
+
+    return out_indices;
   }
 
   /* radii search. in other words, each query can have different radius */
@@ -203,13 +297,24 @@ public:
     nanoflann::SearchParameters params;
     params.sorted = return_sorted;
 
-
     // out
-    py::list indices;
-    py::list dist;
+    py::list out_indices{}, out_dist{};
+    std::vector<py::list> indices(nthread);
+    std::vector<py::list> dist(nthread);
+    const int chunk_size = (qlen + nthread - 1) / nthread;
 
-    auto searchradius = [&](int begin, int end) {
-      for (int i{begin}; i < end; i++) {
+    auto searchradius = [&](int start, int) {
+      const int start_index = start * chunk_size;
+      const int end_index = std::min((start + 1) * chunk_size, qlen);
+      const int n_queries = end_index - start_index;
+
+      auto& this_indices = indices[start];
+      this_indices = py::list(n_queries);
+      auto& this_dist = dist[start];
+      this_dist = py::list(n_queries);
+
+      int l{};
+      for (int i{start_index}; i < end_index; i++) {
         // prepare input
         std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
 
@@ -229,18 +334,23 @@ public:
         DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
 
         // unpack and fill output
-        for (int i{0}; i < (int) nmatches; i++) {
-          i_buf_ptr[i] = matches[i].first;
-          d_buf_ptr[i] = matches[i].second;
+        for (int k{0}; k < (int) nmatches; ++k) {
+          i_buf_ptr[k] = matches[k].first;
+          d_buf_ptr[k] = matches[k].second;
         }
 
-        // append to return list
-        indices.append(ids);
-        dist.append(ds);
+        this_indices[l] = ids;
+        this_dist[l] = ds;
+        ++l;
       }
     };
 
-    nthread_execution(searchradius, qlen, nthread);
+    nthread_execution(searchradius, nthread, nthread);
+
+    for (int i{}; i < nthread; ++i) {
+      out_indices += indices[i];
+      out_dist += dist[i];
+    }
 
     return py::make_tuple(indices, dist);
   }
@@ -266,6 +376,12 @@ void add_kdt_pyclass(py::module& m, const char* class_name) {
       .def("query", &KDT::query, py::arg("queries"), py::arg("nthread"))
       .def("radius_search",
            &KDT::radius_search,
+           py::arg("queries"),
+           py::arg("radius"),
+           py::arg("return_sorted"),
+           py::arg("nthread"))
+      .def("query_ball_point",
+           &KDT::query_ball_point,
            py::arg("queries"),
            py::arg("radius"),
            py::arg("return_sorted"),

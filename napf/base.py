@@ -314,6 +314,34 @@ class _KDT:
             nthread,
         )
 
+    def query_ball_point(self, queries, radius, return_sorted, nthread=None):
+        """
+        scipy-like KDTree query_ball_point call.
+
+        Parameters
+        ----------
+        queries: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        radius: float
+        return_sorted: bool
+        nthread: int
+          Default is None and will use self.nthread
+
+        Returns
+        -------
+        ids: list
+          list of np.array
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.query_ball_point(
+            enforce_contiguous(queries, self.dtype),
+            radius,
+            return_sorted,
+            nthread,
+        )
+
     def radii_search(self, queries, radii, return_sorted, nthread=None):
         """
         Similar to `radius_search`, but you can specify radius for each query.
