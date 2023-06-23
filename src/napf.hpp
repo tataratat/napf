@@ -16,7 +16,7 @@ public:
   inline size_t kdtree_get_point_count() const { return ptrlen_ / dim_; }
 
   inline PointT kdtree_get_pt(const IndexT q_ind, const IndexT q_dim) const {
-    return points_[q_ind * dim + q_dim];
+    return points_[q_ind * dim_ + q_dim];
   }
 
   template<class BBOX>
@@ -103,8 +103,8 @@ public:
       return pts()[id];
     } else {
 
-    // cast here to allow both SplineLib and BezMan coordinates types.
-    return static_cast<double>(pts()[id][q_dim]);
+      // cast here to allow both SplineLib and BezMan coordinates types.
+      return static_cast<double>(pts()[id][q_dim]);
     }
   }
 

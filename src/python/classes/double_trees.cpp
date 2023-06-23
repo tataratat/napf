@@ -1,5 +1,7 @@
 #include "../pykdt.hpp"
 
+namespace napf {
+
 void init_double_trees(py::module_& m) {
   add_kdt_pyclass<double, 1, 1>(m, "KDTdD1L1");
   add_kdt_pyclass<double, 1, 2>(m, "KDTdD1L2");
@@ -41,5 +43,6 @@ void init_double_trees(py::module_& m) {
   add_kdt_pyclass<double, 19, 2>(m, "KDTdD19L2");
   add_kdt_pyclass<double, 20, 1>(m, "KDTdD20L1");
   add_kdt_pyclass<double, 20, 2>(m, "KDTdD20L2");
+}
 
 }

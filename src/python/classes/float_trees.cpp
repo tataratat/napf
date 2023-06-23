@@ -1,5 +1,7 @@
 #include "../pykdt.hpp"
 
+namespace napf {
+
 void init_float_trees(py::module_& m) {
   add_kdt_pyclass<float, 1, 1>(m, "KDTfD1L1");
   add_kdt_pyclass<float, 1, 2>(m, "KDTfD1L2");
@@ -42,3 +44,5 @@ void init_float_trees(py::module_& m) {
   add_kdt_pyclass<float, 20, 1>(m, "KDTfD20L1");
   add_kdt_pyclass<float, 20, 2>(m, "KDTfD20L2");
 }
+
+} // namespace napf

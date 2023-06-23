@@ -114,7 +114,7 @@ class _KDT:
         "_dtype",
     )
 
-    def __init__(self, tree_data, metric=2, nthread=1):
+    def __init__(self, tree_data, metric=2, leaf_size=10, nthread=1):
         """
         _KDT init. Given tree_data, creates corresponding core kdt class.
         Tree is initialized using `newtree()`.
@@ -125,6 +125,7 @@ class _KDT:
         tree_data: (n, d) np.ndarray
           {double, float, int, long}
           Readonly tree data. saved with `newtree()`
+        leaf_size:int
         nthread: int
           Default value for nthreads.
 
@@ -133,7 +134,7 @@ class _KDT:
         tree_data: (n, d) np.ndarray
           {double, float, int, long}
         """
-        self.newtree(tree_data, metric)
+        self.newtree(tree_data, metric, leaf_size, nthread)
         self.nthread = nthread
 
     @property
@@ -213,7 +214,7 @@ class _KDT:
         """
         return self._dtype
 
-    def newtree(self, tree_data, metric=2):
+    def newtree(self, tree_data, metric=2, leaf_size=10, nthread=1):
         """
         Given 2D array-like tree_data, it:
           1. makes sure data is a contiguous array
@@ -232,7 +233,7 @@ class _KDT:
         # we can call newtree() function of the core class,
         # if _core_tree already exists.
         # However, creating a new kdt should not add significant overhead.
-        self._core_tree = eval(f"core.{core_cls}(tdata)")
+        self._core_tree = eval(f"core.{core_cls}(tdata, leaf_size, nthread)")
         self._dtype = tdata.dtype
 
     def knn_search(self, queries, kneighbors, nthread=None):
@@ -314,6 +315,34 @@ class _KDT:
             nthread,
         )
 
+    def query_ball_point(self, queries, radius, return_sorted, nthread=None):
+        """
+        scipy-like KDTree query_ball_point call.
+
+        Parameters
+        ----------
+        queries: (m, d) np.ndarray
+          Data type will be casted to the same type as `tree_data`.
+        radius: float
+        return_sorted: bool
+        nthread: int
+          Default is None and will use self.nthread
+
+        Returns
+        -------
+        ids: list
+          list of np.array
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.query_ball_point(
+            enforce_contiguous(queries, self.dtype),
+            radius,
+            return_sorted,
+            nthread,
+        )
+
     def radii_search(self, queries, radii, return_sorted, nthread=None):
         """
         Similar to `radius_search`, but you can specify radius for each query.
@@ -351,15 +380,74 @@ class _KDT:
             nthread,
         )
 
+    def unique_data_and_inverse(
+        self,
+        radius,
+        return_unique=True,
+        return_intersection=True,
+        nthread=None,
+    ):
+        """
+        Finds unique tree data with in given radius tolerance.
 
-def KDT(tree_data, metric=2):
+        Paramters
+        ---------
+        radius: float
+        return_unique: bool
+          Default is True. Otherwise, will be an empty array return.
+        return_intersection: bool
+          Default is True, Otherwise, will be an empty UIntVectorVector return.
+        nthread:int
+
+        Returns
+        -------
+        unique_data: np.ndarray
+          Empty if return_unique is False.
+          Same as kdt.tree_data[unique_ids].
+        unique_ids: np.ndarray
+          Indices of unique entries from tree data.
+          First occurance is considered unique.
+        inverse_ids: np.ndarray
+          Indices to reconstruct original tree_data with
+          unique_data. kdt.tree_data == unique_data[inverse_ids]
+        intersection: UIntVectorVector
+          Empty if return_intersection is False.
+          Intersection of each data with respect to all the others.
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        (
+            original_inverse,
+            intersection,
+        ) = self.core_tree.tree_data_unique_inverse(
+            radius, return_intersection, nthread
+        )
+
+        unique_ids, inverse_ids = np.unique(
+            original_inverse, return_inverse=True
+        )
+
+        if return_unique:
+            return (
+                self.core_tree.tree_data[unique_ids],
+                unique_ids,
+                inverse_ids,
+                intersection,
+            )
+        else:
+            return np.array(), unique_ids, inverse_ids, intersection
+
+
+def KDT(tree_data, metric=2, leaf_size=10, nthread=1):
     """
     Factory like initializer for KDT.
     `napf` is implemented as template, thus, there are separate classes
     for each {data_type, dim, metric}.
     Currently following combinations are supported:
     data_type: {double, int}
-    dim: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+    dim:
+      {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
     metric: {L1, L2}
 
     Parameters
@@ -369,6 +457,9 @@ def KDT(tree_data, metric=2):
     metric: int or str
       Default is 2 and distance will be a squared euklidian distance.
       Valid options are {1, l1, L1, 2, l2, L2}.
+    leaf_size: int
+    nthread: int
+      Default thread count for all multi-thread-
 
 
     Returns
@@ -377,4 +468,4 @@ def KDT(tree_data, metric=2):
     """
     tdata = np.ascontiguousarray(tree_data)
 
-    return _KDT(tdata, metric)
+    return _KDT(tdata, metric, leaf_size, nthread)

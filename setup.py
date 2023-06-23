@@ -20,6 +20,7 @@ ext_modules = [
     Pybind11Extension(
         "napf._napf",
         [
+            "src/python/classes/radius_search_result_vectors.cpp",
             "src/python/classes/int_trees.cpp",
             "src/python/classes/long_trees.cpp",
             "src/python/classes/float_trees.cpp",
