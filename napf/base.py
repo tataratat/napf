@@ -417,9 +417,26 @@ class _KDT:
         if nthread is None:
             nthread = self.nthread
 
-        return self.core_tree.unique_data_and_inverse(
-            radius, return_unique, return_intersection, nthread
+        (
+            original_inverse,
+            intersection,
+        ) = self.core_tree.tree_data_unique_inverse(
+            radius, return_intersection, nthread
         )
+
+        unique_ids, inverse_ids = np.unique(
+            original_inverse, return_inverse=True
+        )
+
+        if return_unique:
+            return (
+                self.core_tree.tree_data[unique_ids],
+                unique_ids,
+                inverse_ids,
+                intersection,
+            )
+        else:
+            return np.array(), unique_ids, inverse_ids, intersection
 
 
 def KDT(tree_data, metric=2, leaf_size=10, nthread=1):

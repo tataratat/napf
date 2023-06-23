@@ -269,16 +269,13 @@ public:
 
   /// @brief unique points, indices of unique points, inverse indices to create
   /// original points base on unique points.
-  /// @param qpts
   /// @param radius
-  /// @param return_sorted here, sort is based on ids, not distance
   /// @param return_intersection returns neighbor
   /// @param nthread
   /// @return
-  py::tuple unique_data_and_inverse(const DistT radius,
-                                    const bool return_unique,
-                                    const bool return_intersection,
-                                    const int nthread) {
+  py::tuple tree_data_unique_inverse(const DistT radius,
+                                     const bool return_intersection,
+                                     const int nthread) {
 
     using PairType = nanoflann::ResultItem<IndexType, DistT>;
 
@@ -295,20 +292,13 @@ public:
     if (return_intersection) {
       intersection.resize(qlen);
     }
-    // we don't know the number of unique points apriori,
-    // so create max
-    py::array_t<DataT> unique_points{};
-    py::array_t<IndexType> inverse_ids(qlen);
-    IndexType* inverse_ids_ptr =
-        static_cast<IndexType*>(inverse_ids.request().ptr);
-    IndexVectorVector unique_ids_to_concat(nthread);
-    IndexVector unique_ids{};
+    // prepare original inverse
+    py::array_t<IndexType> original_inverse(qlen);
+    IndexType* o_i_ptr =
+        static_cast<IndexType*>(original_inverse.request().ptr);
 
     const IndexType index_t_dim{static_cast<IndexType>(dim)};
     auto searchradius = [&](int start, int end, int current_tid) {
-      auto& this_unique_ids = unique_ids_to_concat[current_tid];
-      this_unique_ids.reserve(end - start);
-
       for (IndexType i{static_cast<IndexType>(start)};
            i < static_cast<IndexType>(end);
            ++i) {
@@ -324,7 +314,7 @@ public:
 
         // prepare output
         // set inverse_id
-        IndexType inverse_id;
+        IndexType unique_id;
         if (return_intersection) {
           auto& this_intersection = intersection[i];
           this_intersection.reserve(nmatches);
@@ -333,7 +323,7 @@ public:
           }
           std::sort(this_intersection.begin(), this_intersection.end());
           // set inverse_ids - it is the smallest neighbor (intersection) index
-          inverse_id = this_intersection[0];
+          unique_id = this_intersection[0];
         } else {
           // here, we'd only need min.
           const auto& min_match =
@@ -342,48 +332,15 @@ public:
                                 [](const PairType& a, const PairType& b) {
                                   return a.first < b.first;
                                 });
-          inverse_id = min_match.first;
+          unique_id = min_match.first;
         }
-
-        // set inverse to global arr
-        inverse_ids_ptr[i] = inverse_id;
-
-        // save unique_id
-        if (inverse_id == i) {
-          this_unique_ids.emplace_back(inverse_id);
-        }
+        o_i_ptr[i] = unique_id;
       }
     };
 
     nthread_execution(searchradius, static_cast<int>(qlen), nthread);
 
-    // gather points
-    for (auto& uitc : unique_ids_to_concat) {
-      std::move(uitc.begin(), uitc.end(), std::back_inserter(unique_ids));
-    }
-
-    if (return_unique) {
-      const size_t n_unique_ids = unique_ids.size();
-      unique_points.resize({n_unique_ids, dim}, false);
-
-      DataT* unique_points_ptr =
-          static_cast<DataT*>(unique_points.request().ptr);
-
-      auto copy_unique = [&](int begin, int end, int) {
-        for (int i{begin}; i < end; ++i) {
-          // copy original points
-          std::copy_n(&q_buf_ptr[unique_ids[i] * index_t_dim],
-                      dim_,
-                      &unique_points_ptr[i * dim_]);
-        }
-      };
-      const int nui = n_unique_ids;
-      nthread_execution(copy_unique, nui, nthread);
-    }
-
-    return py::make_tuple<py::return_value_policy::move>(unique_points,
-                                                         unique_ids,
-                                                         inverse_ids,
+    return py::make_tuple<py::return_value_policy::move>(original_inverse,
                                                          intersection);
   }
 
@@ -501,10 +458,9 @@ void add_kdt_pyclass(py::module_& m, const char* class_name) {
            py::arg("return_sorted"),
            py::arg("nthread"),
            py::return_value_policy::move)
-      .def("unique_data_and_inverse",
-           &KDT::unique_data_and_inverse,
+      .def("tree_data_unique_inverse",
+           &KDT::tree_data_unique_inverse,
            py::arg("radius"),
-           py::arg("return_unique") = true,
            py::arg("return_intersection") = true,
            py::arg("nthread") = 1);
 }
