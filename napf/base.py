@@ -380,6 +380,47 @@ class _KDT:
             nthread,
         )
 
+    def unique_data_and_inverse(
+        self,
+        radius,
+        return_unique=True,
+        return_intersection=True,
+        nthread=None,
+    ):
+        """
+        Finds unique tree data with in given radius tolerance.
+
+        Paramters
+        ---------
+        radius: float
+        return_unique: bool
+          Default is True. Otherwise, will be an empty array return.
+        return_intersection: bool
+          Default is True, Otherwise, will be an empty UIntVectorVector return.
+        nthread:int
+
+        Returns
+        -------
+        unique_data: np.ndarray
+          Empty if return_unique is False.
+          Same as kdt.tree_data[unique_ids].
+        unique_ids: np.ndarray
+          Indices of unique entries from tree data.
+          First occurance is considered unique.
+        inverse_ids: np.ndarray
+          Indices to reconstruct original tree_data with
+          unique_data. kdt.tree_data == unique_data[inverse_ids]
+        intersection: UIntVectorVector
+          Empty if return_intersection is False.
+          Intersection of each data with respect to all the others.
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.unique_data_and_inverse(
+            radius, return_unique, return_intersection, nthread
+        )
+
 
 def KDT(tree_data, metric=2, leaf_size=10, nthread=1):
     """
@@ -388,7 +429,8 @@ def KDT(tree_data, metric=2, leaf_size=10, nthread=1):
     for each {data_type, dim, metric}.
     Currently following combinations are supported:
     data_type: {double, int}
-    dim: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+    dim:
+      {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
     metric: {L1, L2}
 
     Parameters

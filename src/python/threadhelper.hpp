@@ -5,12 +5,11 @@
 
 namespace napf {
 
-/* thread for all */
 template<typename Func, typename IndexT>
-void nthread_execution(Func& f, IndexT& total, IndexT& nthread) {
+void nthread_execution(Func& f, const IndexT total, const IndexT nthread) {
   // if nthread == 1, don't even bother creating thread
   if (nthread == 1 || nthread == 0) {
-    f(0, total);
+    f(0, total, 0);
     return;
   }
 
@@ -30,12 +29,14 @@ void nthread_execution(Func& f, IndexT& total, IndexT& nthread) {
   tpool.reserve(n_usable_threads);
 
   for (int i{0}; i < (n_usable_threads - 1); i++) {
-    tpool.emplace_back(std::thread{f, i * chunk_size, (i + 1) * chunk_size});
+    tpool.emplace_back(std::thread{f, i * chunk_size, (i + 1) * chunk_size, i});
   }
   {
     // last one
-    tpool.emplace_back(
-        std::thread{f, (n_usable_threads - 1) * chunk_size, total});
+    tpool.emplace_back(std::thread{f,
+                                   (n_usable_threads - 1) * chunk_size,
+                                   total,
+                                   n_usable_threads - 1});
   }
 
   for (auto& t : tpool) {
