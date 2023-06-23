@@ -114,7 +114,7 @@ class _KDT:
         "_dtype",
     )
 
-    def __init__(self, tree_data, metric=2, nthread=1):
+    def __init__(self, tree_data, metric=2, leaf_size=10, nthread=1):
         """
         _KDT init. Given tree_data, creates corresponding core kdt class.
         Tree is initialized using `newtree()`.
@@ -125,6 +125,7 @@ class _KDT:
         tree_data: (n, d) np.ndarray
           {double, float, int, long}
           Readonly tree data. saved with `newtree()`
+        leaf_size:int
         nthread: int
           Default value for nthreads.
 
@@ -133,7 +134,7 @@ class _KDT:
         tree_data: (n, d) np.ndarray
           {double, float, int, long}
         """
-        self.newtree(tree_data, metric)
+        self.newtree(tree_data, metric, leaf_size, nthread)
         self.nthread = nthread
 
     @property
@@ -213,7 +214,7 @@ class _KDT:
         """
         return self._dtype
 
-    def newtree(self, tree_data, metric=2):
+    def newtree(self, tree_data, metric=2, leaf_size=10, nthread=1):
         """
         Given 2D array-like tree_data, it:
           1. makes sure data is a contiguous array
@@ -232,7 +233,7 @@ class _KDT:
         # we can call newtree() function of the core class,
         # if _core_tree already exists.
         # However, creating a new kdt should not add significant overhead.
-        self._core_tree = eval(f"core.{core_cls}(tdata)")
+        self._core_tree = eval(f"core.{core_cls}(tdata, leaf_size, nthread)")
         self._dtype = tdata.dtype
 
     def knn_search(self, queries, kneighbors, nthread=None):
@@ -380,14 +381,14 @@ class _KDT:
         )
 
 
-def KDT(tree_data, metric=2):
+def KDT(tree_data, metric=2, leaf_size=10, nthread=1):
     """
     Factory like initializer for KDT.
     `napf` is implemented as template, thus, there are separate classes
     for each {data_type, dim, metric}.
     Currently following combinations are supported:
     data_type: {double, int}
-    dim: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+    dim: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
     metric: {L1, L2}
 
     Parameters
@@ -397,6 +398,9 @@ def KDT(tree_data, metric=2):
     metric: int or str
       Default is 2 and distance will be a squared euklidian distance.
       Valid options are {1, l1, L1, 2, l2, L2}.
+    leaf_size: int
+    nthread: int
+      Default thread count for all multi-thread-
 
 
     Returns
@@ -405,4 +409,4 @@ def KDT(tree_data, metric=2):
     """
     tdata = np.ascontiguousarray(tree_data)
 
-    return _KDT(tdata, metric)
+    return _KDT(tdata, metric, leaf_size, nthread)

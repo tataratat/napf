@@ -61,20 +61,40 @@ public:
 
   const int dim_ = dim;
   const unsigned int metric_ = metric;
+  size_t leaf_size_{10};
+  int nthread_{1};
 
   py::array_t<DataT> tree_data_;
   DataT* tree_data_ptr_;
   IndexType datalen_ = 0;
   std::unique_ptr<Cloud> cloud_;
-
   std::unique_ptr<Tree> tree_;
 
   PyKDT() = default;
 
-  PyKDT(py::array_t<DataT> tree_data) { newtree(tree_data); }
+  PyKDT(PyKDT&& other) noexcept = default;
+
+  PyKDT(py::array_t<DataT> tree_data) { newtree(tree_data, 10, 1); }
+  PyKDT(py::array_t<DataT> tree_data,
+        const size_t leaf_size,
+        const int nthread) {
+    newtree(tree_data, leaf_size, nthread);
+  }
 
   /* builds a new tree and saves it as unique_ptr */
-  void newtree(py::array_t<DataT> tree_data) {
+  void newtree(py::array_t<DataT> tree_data,
+               const size_t leaf_size = 10,
+               const int nthread = 1) {
+    // save settings
+    leaf_size_ = leaf_size;
+    nthread_ = nthread;
+
+    // create build param
+    nanoflann::KDTreeSingleIndexAdaptorParams params(
+        leaf_size,
+        nanoflann::KDTreeSingleIndexAdaptorFlags::None,
+        static_cast<unsigned int>(nthread));
+
     // save relevant infos locally
     // don't copy.
     // be aware, this means even if you change tree_data inplace,
@@ -89,7 +109,7 @@ public:
     // prepare cloud and tree
     cloud_ = std::unique_ptr<Cloud>(
         new Cloud(tree_data_ptr_, static_cast<IndexType>(t_buf.size)));
-    tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_));
+    tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_, params));
   }
 
   /* given query points, returns indices and distances */
@@ -187,7 +207,7 @@ public:
 
     nthread_execution(searchradius, qlen, nthread);
 
-    return py::make_tuple(out_indices, out_dist);
+    return py::make_tuple<py::return_value_policy::move>(out_indices, out_dist);
   }
 
   /// @brief
@@ -196,10 +216,10 @@ public:
   /// @param return_sorted here, sort is based on ids, not distance
   /// @param nthread
   /// @return
-  py::list query_ball_point(const py::array_t<DataT> qpts,
-                            const DistT radius,
-                            const bool return_sorted,
-                            const int nthread) {
+  IndexVectorVector query_ball_point(const py::array_t<DataT> qpts,
+                                     const DistT radius,
+                                     const bool return_sorted,
+                                     const int nthread) {
 
     using PairType = nanoflann::ResultItem<IndexType, DistT>;
 
@@ -212,20 +232,12 @@ public:
     params.sorted = false;
 
     // out
-    py::list out_indices{};
-    std::vector<py::list> indices(nthread);
-    const int chunk_size = (qlen + nthread - 1) / nthread;
+    IndexVectorVector out_indices(qlen);
 
-    auto searchradius = [&](int start, int) {
-      const int start_index = start * chunk_size;
-      const int end_index = std::min((start + 1) * chunk_size, qlen);
-      const int n_queries = end_index - start_index;
+    auto searchradius = [&](int start, int end) {
+      auto& this_indices = out_indices[start];
 
-      auto& this_indices = indices[start];
-      this_indices = py::list(n_queries);
-
-      int l{}; // for list element id
-      for (int i{start_index}; i < end_index; i++) {
+      for (int i{start}; i < end; i++) {
         // prepare input
         std::vector<PairType> matches;
 
@@ -234,34 +246,22 @@ public:
             tree_->radiusSearch(&q_buf_ptr[i * dim_], radius, matches, params);
 
         // prepare output
-        py::array_t<IndexType> ids(nmatches);
-        py::buffer_info i_buf = ids.request();
-        IndexType* i_buf_ptr = static_cast<IndexType*>(i_buf.ptr);
+        this_indices.reserve(nmatches);
+
+        // unpack and fill output
+        for (auto& match : matches) {
+          this_indices.emplace_back(match.first);
+        }
 
         // sort ids
         if (return_sorted) {
-          std::sort(matches.begin(),
-                    matches.end(),
-                    [](const PairType& a, const PairType& b) {
-                      return a.first < b.first;
-                    });
+          // default sort is good here.
+          std::sort(this_indices.begin(), this_indices.end());
         }
-
-        // unpack and fill output
-        for (int k{}; k < (int) nmatches; ++k) {
-          i_buf_ptr[k] = matches[k].first;
-        }
-
-        this_indices[l] = ids;
-        ++l;
       }
     };
 
-    nthread_execution(searchradius, nthread, nthread);
-
-    for (auto& ind : indices) {
-      out_indices += ind;
-    }
+    nthread_execution(searchradius, qlen, nthread);
 
     return out_indices;
   }
@@ -325,7 +325,7 @@ public:
 
     nthread_execution(searchradius, qlen, nthread);
 
-    return py::make_tuple(out_indices, out_dist);
+    return py::make_tuple<py::return_value_policy::move>(out_indices, out_dist);
   }
 };
 
@@ -336,35 +336,50 @@ void add_kdt_pyclass(py::module_& m, const char* class_name) {
   py::class_<KDT> klasse(m, class_name);
 
   klasse.def(py::init<>())
-      .def(py::init<py::array_t<T>>(), py::arg("tree_data"))
+      .def(py::init<py::array_t<T>, size_t, int>(),
+           py::arg("tree_data"),
+           py::arg("leaf_size") = 10,
+           py::arg("nthread") = 1)
       .def_readonly("tree_data", &KDT::tree_data_)
       .def_readonly("dim", &KDT::dim_)
       .def_readonly("metric", &KDT::metric_)
-      .def("newtree", &KDT::newtree, py::arg("tree_data"))
+      .def("newtree",
+           &KDT::newtree,
+           py::arg("tree_data"),
+           py::arg("leaf_size") = 10,
+           py::arg("nthread") = 1)
       .def("knn_search",
            &KDT::knn_search,
            py::arg("queries"),
            py::arg("kneighbors"),
-           py::arg("nthread"))
-      .def("query", &KDT::query, py::arg("queries"), py::arg("nthread"))
+           py::arg("nthread"),
+           py::return_value_policy::move)
+      .def("query",
+           &KDT::query,
+           py::arg("queries"),
+           py::arg("nthread"),
+           py::return_value_policy::move)
       .def("radius_search",
            &KDT::radius_search,
            py::arg("queries"),
            py::arg("radius"),
            py::arg("return_sorted"),
-           py::arg("nthread"))
+           py::arg("nthread"),
+           py::return_value_policy::move)
       .def("query_ball_point",
            &KDT::query_ball_point,
            py::arg("queries"),
            py::arg("radius"),
            py::arg("return_sorted"),
-           py::arg("nthread"))
+           py::arg("nthread"),
+           py::return_value_policy::move)
       .def("radii_search",
            &KDT::radii_search,
            py::arg("queries"),
            py::arg("radii"),
            py::arg("return_sorted"),
-           py::arg("nthread"));
+           py::arg("nthread"),
+           py::return_value_policy::move);
 }
 
 } // namespace napf
