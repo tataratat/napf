@@ -12,14 +12,29 @@
 #include "../napf.hpp"
 #include "threadhelper.hpp"
 
+namespace napf {
+
 namespace py = pybind11;
+
+// Radius search result holder types
+using FloatVector = std::vector<float>;
+using FloatVectorVector = std::vector<FloatVector>;
+using DoubleVector = std::vector<double>;
+using DoubleVectorVector = std::vector<DoubleVector>;
+using UIntVector = std::vector<unsigned int>;
+using UIntVectorVector = std::vector<UIntVector>;
+
+// fix index type and add alias
+using IndexType = typename UIntVector::value_type;
+using IndexVector = UIntVector;
+using IndexVectorVector = UIntVectorVector;
 
 template<typename DataT,
          typename DistT,
          typename IndexT,
          int dim,
          unsigned int metric>
-using TreeT = typename std::conditional<
+using TreeType = typename std::conditional<
     (dim < 4),
     napf::RawPtrTree<DataT, DistT, IndexT, dim, metric>,
     napf::RawPtrHighDimTree<DataT, DistT, IndexT, dim, metric>>::type;
@@ -32,17 +47,24 @@ public:
   //   index is always unsigned int
   using DistT = typename std::
       conditional<std::is_same<DataT, float>::value, float, double>::type;
-  using IndexT = unsigned int;
+  using DistVector =
+      typename std::conditional<std::is_same<DistT, float>::value,
+                                FloatVector,
+                                DoubleVector>::type;
+  using DistVectorVector =
+      typename std::conditional<std::is_same<DistVector, FloatVector>::value,
+                                FloatVectorVector,
+                                DoubleVectorVector>::type;
 
-  using Tree = TreeT<DataT, DistT, IndexT, dim, metric>;
-  using Cloud = napf::RawPtrCloud<DataT, IndexT, dim>;
+  using Tree = TreeType<DataT, DistT, IndexType, dim, metric>;
+  using Cloud = napf::RawPtrCloud<DataT, IndexType, dim>;
 
   const int dim_ = dim;
   const unsigned int metric_ = metric;
 
   py::array_t<DataT> tree_data_;
   DataT* tree_data_ptr_;
-  IndexT datalen_ = 0;
+  IndexType datalen_ = 0;
   std::unique_ptr<Cloud> cloud_;
 
   std::unique_ptr<Tree> tree_;
@@ -60,13 +82,13 @@ public:
     tree_data_ = tree_data;
     const py::buffer_info t_buf = tree_data.request();
     tree_data_ptr_ = static_cast<DataT*>(t_buf.ptr);
-    datalen_ = static_cast<IndexT>(t_buf.shape[0]);
+    datalen_ = static_cast<IndexType>(t_buf.shape[0]);
 
     // maybe can check if shape[1] matches dim here
 
     // prepare cloud and tree
     cloud_ = std::unique_ptr<Cloud>(
-        new Cloud(tree_data_ptr_, static_cast<IndexT>(t_buf.size)));
+        new Cloud(tree_data_ptr_, static_cast<IndexType>(t_buf.size)));
     tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_));
   }
 
@@ -81,9 +103,9 @@ public:
     const int qlen = q_buf.shape[0];
 
     // out
-    py::array_t<IndexT> indices(qlen * kneighbors);
+    py::array_t<IndexType> indices(qlen * kneighbors);
     py::buffer_info i_buf = indices.request();
-    IndexT* i_buf_ptr = static_cast<IndexT*>(i_buf.ptr);
+    IndexType* i_buf_ptr = static_cast<IndexType*>(i_buf.ptr);
     py::array_t<DistT> dist(qlen * kneighbors);
     py::buffer_info d_buf = dist.request();
     DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
@@ -132,62 +154,38 @@ public:
     const py::buffer_info q_buf = qpts.request();
     const DataT* q_buf_ptr = static_cast<DataT*>(q_buf.ptr);
     const int qlen = q_buf.shape[0];
+
     nanoflann::SearchParameters params;
     params.sorted = return_sorted;
 
     // out
-    py::list out_indices{}, out_dist{};
-    std::vector<py::list> indices(nthread);
-    std::vector<py::list> dist(nthread);
-    const int chunk_size = (qlen + nthread - 1) / nthread;
+    IndexVectorVector out_indices(qlen);
+    DistVectorVector out_dist(qlen);
 
-    auto searchradius = [&](int start, int) {
-      const int start_index = start * chunk_size;
-      const int end_index = std::min((start + 1) * chunk_size, qlen);
-      const int n_queries = end_index - start_index;
+    auto searchradius = [&](int begin, int end) {
+      for (int i{begin}; i < end; i++) {
 
-      auto& this_indices = indices[start];
-      this_indices = py::list(n_queries);
-      auto& this_dist = dist[start];
-      this_dist = py::list(n_queries);
+        auto& this_indices = out_indices[i];
+        auto& this_dist = out_dist[i];
 
-      int l{}; // for list element id
-      for (int i{start_index}; i < end_index; i++) {
         // prepare input
-        std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
+        std::vector<nanoflann::ResultItem<IndexType, DistT>> matches;
 
-        const int j{i * static_cast<int>(dim)};
         // call
         const auto nmatches =
-            tree_->radiusSearch(&q_buf_ptr[j], radius, matches, params);
+            tree_->radiusSearch(&q_buf_ptr[i * dim_], radius, matches, params);
 
-        // prepare output
-        py::array_t<IndexT> ids(nmatches);
-        py::buffer_info i_buf = ids.request();
-        IndexT* i_buf_ptr = static_cast<IndexT*>(i_buf.ptr);
+        this_indices.reserve(nmatches);
+        this_dist.reserve(nmatches);
 
-        py::array_t<DistT> ds(nmatches);
-        py::buffer_info d_buf = ds.request();
-        DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
-
-        // unpack and fill output
-        for (int k{}; k < (int) nmatches; ++k) {
-          i_buf_ptr[k] = matches[k].first;
-          d_buf_ptr[k] = matches[k].second;
+        for (auto& match : matches) {
+          this_indices.emplace_back(match.first);
+          this_dist.emplace_back(match.second);
         }
-
-        this_indices[l] = ids;
-        this_dist[l] = ds;
-        ++l;
       }
     };
 
-    nthread_execution(searchradius, nthread, nthread);
-
-    for (int i{}; i < nthread; ++i) {
-      out_indices += indices[i];
-      out_dist += dist[i];
-    }
+    nthread_execution(searchradius, qlen, nthread);
 
     return py::make_tuple(out_indices, out_dist);
   }
@@ -203,7 +201,7 @@ public:
                             const bool return_sorted,
                             const int nthread) {
 
-    using PairType = nanoflann::ResultItem<IndexT, DistT>;
+    using PairType = nanoflann::ResultItem<IndexType, DistT>;
 
     // in
     const py::buffer_info q_buf = qpts.request();
@@ -231,15 +229,14 @@ public:
         // prepare input
         std::vector<PairType> matches;
 
-        const int j{i * static_cast<int>(dim)};
         // call
         const auto nmatches =
-            tree_->radiusSearch(&q_buf_ptr[j], radius, matches, params);
+            tree_->radiusSearch(&q_buf_ptr[i * dim_], radius, matches, params);
 
         // prepare output
-        py::array_t<IndexT> ids(nmatches);
+        py::array_t<IndexType> ids(nmatches);
         py::buffer_info i_buf = ids.request();
-        IndexT* i_buf_ptr = static_cast<IndexT*>(i_buf.ptr);
+        IndexType* i_buf_ptr = static_cast<IndexType*>(i_buf.ptr);
 
         // sort ids
         if (return_sorted) {
@@ -298,66 +295,42 @@ public:
     params.sorted = return_sorted;
 
     // out
-    py::list out_indices{}, out_dist{};
-    std::vector<py::list> indices(nthread);
-    std::vector<py::list> dist(nthread);
-    const int chunk_size = (qlen + nthread - 1) / nthread;
+    IndexVectorVector out_indices(qlen);
+    DistVectorVector out_dist(qlen);
 
-    auto searchradius = [&](int start, int) {
-      const int start_index = start * chunk_size;
-      const int end_index = std::min((start + 1) * chunk_size, qlen);
-      const int n_queries = end_index - start_index;
+    auto searchradius = [&](int start, int end) {
+      auto& this_indices = out_indices[start];
+      auto& this_dist = out_dist[start];
 
-      auto& this_indices = indices[start];
-      this_indices = py::list(n_queries);
-      auto& this_dist = dist[start];
-      this_dist = py::list(n_queries);
-
-      int l{};
-      for (int i{start_index}; i < end_index; i++) {
+      for (int i{start}; i < end; ++i) {
         // prepare input
-        std::vector<nanoflann::ResultItem<IndexT, DistT>> matches;
+        std::vector<nanoflann::ResultItem<IndexType, DistT>> matches;
 
-        const int j{i * static_cast<int>(dim)};
         // call
-        const auto nmatches =
-            tree_->radiusSearch(&q_buf_ptr[j], r_buf_ptr[i], matches, params);
+        const auto nmatches = tree_->radiusSearch(&q_buf_ptr[i * dim_],
+                                                  r_buf_ptr[i],
+                                                  matches,
+                                                  params);
 
-        // prepare output
-        // potentially could be replaced with list.
-        py::array_t<IndexT> ids(nmatches);
-        py::buffer_info i_buf = ids.request();
-        IndexT* i_buf_ptr = static_cast<IndexT*>(i_buf.ptr);
-
-        py::array_t<DistT> ds(nmatches);
-        py::buffer_info d_buf = ds.request();
-        DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
+        this_indices.reserve(nmatches);
+        this_dist.reserve(nmatches);
 
         // unpack and fill output
         for (int k{0}; k < (int) nmatches; ++k) {
-          i_buf_ptr[k] = matches[k].first;
-          d_buf_ptr[k] = matches[k].second;
+          this_indices.emplace_back(matches[k].first);
+          this_dist.emplace_back(matches[k].second);
         }
-
-        this_indices[l] = ids;
-        this_dist[l] = ds;
-        ++l;
       }
     };
 
-    nthread_execution(searchradius, nthread, nthread);
+    nthread_execution(searchradius, qlen, nthread);
 
-    for (int i{}; i < nthread; ++i) {
-      out_indices += indices[i];
-      out_dist += dist[i];
-    }
-
-    return py::make_tuple(indices, dist);
+    return py::make_tuple(out_indices, out_dist);
   }
 };
 
 template<typename T, int dim, unsigned int metric>
-void add_kdt_pyclass(py::module& m, const char* class_name) {
+void add_kdt_pyclass(py::module_& m, const char* class_name) {
   using KDT = PyKDT<T, dim, metric>;
 
   py::class_<KDT> klasse(m, class_name);
@@ -393,3 +366,5 @@ void add_kdt_pyclass(py::module& m, const char* class_name) {
            py::arg("return_sorted"),
            py::arg("nthread"));
 }
+
+} // namespace napf

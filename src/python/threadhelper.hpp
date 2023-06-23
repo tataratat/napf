@@ -3,6 +3,8 @@
 #include <cmath>
 #include <thread>
 
+namespace napf {
+
 /* thread for all */
 template<typename Func, typename IndexT>
 void nthread_execution(Func& f, IndexT& total, IndexT& nthread) {
@@ -29,3 +31,5 @@ void nthread_execution(Func& f, IndexT& total, IndexT& nthread) {
     t.join();
   }
 }
+
+} // namespace napf

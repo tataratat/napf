@@ -1,5 +1,7 @@
 #include "../pykdt.hpp"
 
+namespace napf {
+
 void init_long_trees(py::module_& m) {
   add_kdt_pyclass<int64_t, 1, 1>(m, "KDTlD1L1");
   add_kdt_pyclass<int64_t, 1, 2>(m, "KDTlD1L2");
@@ -42,3 +44,5 @@ void init_long_trees(py::module_& m) {
   add_kdt_pyclass<int64_t, 20, 1>(m, "KDTlD20L1");
   add_kdt_pyclass<int64_t, 20, 2>(m, "KDTlD20L2");
 }
+
+} // namespace napf
