@@ -15,4 +15,4 @@ void init_radius_search_result_vector(py::module_& m) {
   py::bind_vector<UIntVectorVector>(m, "UIntVectorVector");
 }
 
-}
+} // namespace napf

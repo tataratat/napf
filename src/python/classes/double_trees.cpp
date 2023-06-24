@@ -45,4 +45,4 @@ void init_double_trees(py::module_& m) {
   add_kdt_pyclass<double, 20, 2>(m, "KDTdD20L2");
 }
 
-}
+} // namespace napf
