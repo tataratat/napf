@@ -1,0 +1,41 @@
+name: docs
+
+on:
+  push
+
+jobs:
+  minimal_explicit_build_and_docs:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Set up  python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: install dependencies
+      run: pip install numpy
+
+    - name: build splinepy linux
+      run: python3 setup.py develop
+
+    - name: test
+      run: python3 tests/test_init_and_query.py
+
+    - name: build docs
+      run: |
+        pip install -r ./docs/requirements.txt
+        sphinx-build -W -b html docs/source docs/build -j auto
+
+    - name: deploy docs only if it is pushed to main
+      uses: peaceiris/actions-gh-pages@v3
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      with:
+        #publish_branch: gh-pages
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/build
+        force_orphan: true
