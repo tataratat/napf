@@ -1,4 +1,7 @@
 # napf
+[![main](https://github.com/tataratat/napf/actions/workflows/main.yml/badge.svg)](https://github.com/tataratat/napf/actions/workflows/main.yml)
+[![PyPI version](https://badge.fury.io/py/napf.svg)](https://badge.fury.io/py/napf)
+
 [`nanoflann`](https://github.com/jlblancoc/nanoflann) wrappers for python and maybe fortran.
 
 ## python
