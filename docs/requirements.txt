@@ -1,0 +1,4 @@
+myst_parser
+pydata-sphinx-theme
+sphinx
+sphinx-mdinclude
