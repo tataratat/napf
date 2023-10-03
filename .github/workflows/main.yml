@@ -1,4 +1,4 @@
-name: build full and pypi upload
+name: main
 
 on:
   push:
@@ -131,6 +131,8 @@ jobs:
   upload_pypi:
     needs: [macos_wheel, linux_wheel, windows_wheel, source_dist]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     # try to publish only if this is a push to stable branch
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
@@ -139,8 +141,6 @@ jobs:
           name: artifact
           path: dist
 
-      - uses: pypa/gh-action-pypi-publish@v1.6.1
+      - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          skip_existing: true
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
+          skip-existing: true
