@@ -4,18 +4,20 @@
 
 namespace napf {
 
-template<typename PointT, typename IndexT, int dim>
+template<typename DataT, typename IndexT>
 struct ArrayCloud {
 public:
   ArrayCloud() = default;
 
-  ArrayCloud(const PointT* points, IndexT ptrlen)
+  ArrayCloud(const DataT* points, IndexT ptrlen, IndexT dim)
       : points_(points),
-        ptrlen_(ptrlen) {}
+        ptrlen_(ptrlen),
+        dim_(dim) {}
 
   inline size_t kdtree_get_point_count() const { return ptrlen_ / dim_; }
 
-  inline PointT kdtree_get_pt(const IndexT& q_ind, const IndexT& q_dim) const {
+  inline const DataT& kdtree_get_pt(const IndexT& q_ind,
+                                    const IndexT& q_dim) const {
     return points_[q_ind * dim_ + q_dim];
   }
 
@@ -25,9 +27,9 @@ public:
   }
 
 private:
-  const PointT* points_;
+  const DataT* points_;
   const IndexT ptrlen_;
-  const IndexT dim_ = static_cast<IndexT>(dim);
+  const IndexT dim_;
 };
 
 /*
@@ -36,31 +38,25 @@ private:
  * TParameters
  * ------------
  * T: data type
- * dim: data dim
  * metric: distance matric
  *  1 -> L1, 2 -> L2
  */
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric>
+template<typename DataT, typename DistT, typename IndexT, unsigned int metric>
 using ArrayTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
-        nanoflann::
-            L1_Adaptor<DataT, ArrayCloud<DataT, IndexT, dim>, DistT, IndexT>,
-        typename std::conditional<
-            (dim > 3),
-            nanoflann::L2_Simple_Adaptor<DataT,
-                                         ArrayCloud<DataT, IndexT, dim>,
-                                         DistT,
-                                         IndexT>,
-            nanoflann::L2_Adaptor<DataT,
-                                  ArrayCloud<DataT, IndexT, dim>,
-                                  DistT,
-                                  IndexT>>::type>::type,
-    ArrayCloud<DataT, IndexT, dim>,
-    dim,
+        nanoflann::L1_Adaptor<DataT, ArrayCloud<DataT, IndexT>, DistT, IndexT>,
+        nanoflann::L2_Simple_Adaptor<DataT,
+                                     ArrayCloud<DataT, IndexT>,
+                                     DistT,
+                                     IndexT>>::type,
+    ArrayCloud<DataT, IndexT>,
+    -1, /* dim is dynamic variable in nanoflann, so let's not extent tparam */
     IndexT>;
+
+/// helper type for Distance. It will be a double unless DataT is float.
+template<typename DataT>
+using DistT = typename std::
+    conditional<std::is_same<DataT, float>::value, float, double>::type;
+
 } // namespace napf
