@@ -5,17 +5,17 @@
 namespace napf {
 
 template<typename PointT, typename IndexT, int dim>
-struct RawPtrCloud {
+struct ArrayCloud {
 public:
-  RawPtrCloud() = default;
+  ArrayCloud() = default;
 
-  RawPtrCloud(const PointT* points, IndexT ptrlen)
+  ArrayCloud(const PointT* points, IndexT ptrlen)
       : points_(points),
         ptrlen_(ptrlen) {}
 
   inline size_t kdtree_get_point_count() const { return ptrlen_ / dim_; }
 
-  inline PointT kdtree_get_pt(const IndexT q_ind, const IndexT q_dim) const {
+  inline PointT kdtree_get_pt(const IndexT& q_ind, const IndexT& q_dim) const {
     return points_[q_ind * dim_ + q_dim];
   }
 
@@ -45,106 +45,22 @@ template<typename DataT,
          typename IndexT,
          size_t dim,
          unsigned int metric>
-using RawPtrTree = nanoflann::KDTreeSingleIndexAdaptor<
+using ArrayTree = nanoflann::KDTreeSingleIndexAdaptor<
     typename std::conditional<
         (metric == 1),
         nanoflann::
-            L1_Adaptor<DataT, RawPtrCloud<DataT, IndexT, dim>, DistT, IndexT>,
-        nanoflann::
-            L2_Adaptor<DataT, RawPtrCloud<DataT, IndexT, dim>, DistT, IndexT>>::
-        type,
-    RawPtrCloud<DataT, IndexT, dim>,
+            L1_Adaptor<DataT, ArrayCloud<DataT, IndexT, dim>, DistT, IndexT>,
+        typename std::conditional<
+            (dim > 3),
+            nanoflann::L2_Simple_Adaptor<DataT,
+                                         ArrayCloud<DataT, IndexT, dim>,
+                                         DistT,
+                                         IndexT>,
+            nanoflann::L2_Adaptor<DataT,
+                                  ArrayCloud<DataT, IndexT, dim>,
+                                  DistT,
+                                  IndexT>>::type>::type,
+    ArrayCloud<DataT, IndexT, dim>,
     dim,
     IndexT>;
-
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric>
-using RawPtrHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
-    typename std::conditional<
-        (metric == 1),
-        nanoflann::
-            L1_Adaptor<DataT, RawPtrCloud<DataT, IndexT, dim>, DistT, IndexT>,
-        nanoflann::
-            L2_Adaptor<DataT, RawPtrCloud<DataT, IndexT, dim>, DistT, IndexT>>::
-        type,
-    RawPtrCloud<DataT, IndexT, dim>,
-    dim,
-    IndexT>;
-
-#ifdef SPLINEPYEXT
-// CoordinatesT : std::unique_ptr<
-//                    std::array<CoordinateValueT, dim>[] or CoordinateValueT[]
-//                >
-template<typename CoordinatesT, typename IndexT, int dim>
-struct CoordinatesCloud {
-public:
-  using CoordnatesT_ = CoordinatesT;
-  using IndexT_ = IndexT;
-
-  const CoordinatesT& points_;
-  const IndexT size_;
-
-  CoordinatesCloud(const CoordinatesT& coords, const IndexT size)
-      : points_(coords),
-        size_(size) {}
-
-  // CRTP helper method
-  inline const CoordinatesT& pts() const { return points_; }
-
-  inline size_t kdtree_get_point_count() const { return size_; }
-
-  // Since the type is hardcoded in splinelib, here too.
-  inline double kdtree_get_pt(const IndexT id, const IndexT q_dim) const {
-    // scalar beziers are special, apparently
-    if constexpr (std::is_scalar<typename CoordinatesT::element_type>::value) {
-      return pts()[id];
-    } else {
-
-      // cast here to allow both SplineLib and BezMan coordinates types.
-      return static_cast<double>(pts()[id][q_dim]);
-    }
-  }
-
-  // everyone does it
-  template<class BBOX>
-  bool kdtree_get_bbox(BBOX&) const {
-    return false;
-  }
-};
-
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric,
-         typename CoordinatesCloudT>
-using CoordinatesTree = nanoflann::KDTreeSingleIndexAdaptor<
-    typename std::conditional<
-        (metric == 1),
-        nanoflann::L1_Adaptor<DataT, CoordinatesCloudT, DistT, IndexT>,
-        nanoflann::L2_Simple_Adaptor<DataT, CoordinatesCloudT, DistT, IndexT>>::
-        type,
-    CoordinatesCloudT,
-    dim,
-    IndexT>;
-
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         size_t dim,
-         unsigned int metric,
-         typename CoordinatesCloudT>
-using CoordinatesHighDimTree = nanoflann::KDTreeSingleIndexAdaptor<
-    typename std::conditional<
-        (metric == 1),
-        nanoflann::L1_Adaptor<DataT, CoordinatesCloudT, DistT, IndexT>,
-        nanoflann::L2_Adaptor<DataT, CoordinatesCloudT, DistT, IndexT>>::type,
-    CoordinatesCloudT,
-    dim,
-    IndexT>;
-#endif
-
 } // namespace napf

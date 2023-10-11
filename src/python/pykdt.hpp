@@ -35,10 +35,7 @@ template<typename DataT,
          typename IndexT,
          int dim,
          unsigned int metric>
-using TreeType = typename std::conditional<
-    (dim < 4),
-    napf::RawPtrTree<DataT, DistT, IndexT, dim, metric>,
-    napf::RawPtrHighDimTree<DataT, DistT, IndexT, dim, metric>>::type;
+using TreeType = ArrayTree<DataT, DistT, IndexT, dim, metric>;
 
 template<typename DataT, size_t dim, unsigned int metric>
 class PyKDT {
@@ -58,7 +55,7 @@ public:
                                 DoubleVectorVector>::type;
 
   using Tree = TreeType<DataT, DistT, IndexType, dim, metric>;
-  using Cloud = napf::RawPtrCloud<DataT, IndexType, dim>;
+  using Cloud = napf::ArrayCloud<DataT, IndexType, dim>;
 
   const int dim_ = dim;
   const unsigned int metric_ = metric;
