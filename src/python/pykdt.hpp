@@ -30,17 +30,7 @@ using IndexType = typename UIntVector::value_type;
 using IndexVector = UIntVector;
 using IndexVectorVector = UIntVectorVector;
 
-template<typename DataT,
-         typename DistT,
-         typename IndexT,
-         int dim,
-         unsigned int metric>
-using TreeType = typename std::conditional<
-    (dim < 4),
-    napf::RawPtrTree<DataT, DistT, IndexT, dim, metric>,
-    napf::RawPtrHighDimTree<DataT, DistT, IndexT, dim, metric>>::type;
-
-template<typename DataT, size_t dim, unsigned int metric>
+template<typename DataT, unsigned int metric>
 class PyKDT {
 public:
   // let's fix some datatype.
@@ -57,10 +47,10 @@ public:
                                 FloatVectorVector,
                                 DoubleVectorVector>::type;
 
-  using Tree = TreeType<DataT, DistT, IndexType, dim, metric>;
-  using Cloud = napf::RawPtrCloud<DataT, IndexType, dim>;
+  using Tree = ArrayTree<DataT, DistT, IndexType, metric>;
+  using Cloud = napf::ArrayCloud<DataT, IndexType>;
 
-  const int dim_ = dim;
+  int dim_{};
   const unsigned int metric_ = metric;
   size_t leaf_size_{10};
   int nthread_{1};
@@ -87,6 +77,7 @@ public:
                const size_t leaf_size = 10,
                const int nthread = 1) {
     // save settings
+    dim_ = tree_data.shape(1);
     leaf_size_ = leaf_size;
     nthread_ = nthread;
 
@@ -109,8 +100,8 @@ public:
 
     // prepare cloud and tree
     cloud_ = std::unique_ptr<Cloud>(
-        new Cloud(tree_data_ptr_, static_cast<IndexType>(t_buf.size)));
-    tree_ = std::unique_ptr<Tree>(new Tree(dim, *cloud_, params));
+        new Cloud(tree_data_ptr_, static_cast<IndexType>(t_buf.size), dim_));
+    tree_ = std::unique_ptr<Tree>(new Tree(dim_, *cloud_, params));
   }
 
   /* given query points, returns indices and distances */
@@ -143,7 +134,7 @@ public:
     // prepare routine in lambda so that it can be executed with nthreads
     auto searchknn = [&](int begin, int end, int) {
       for (int i{begin}; i < end; i++) {
-        const int j{i * static_cast<int>(dim)};
+        const int j{i * dim_};
         const int k{i * kneighbors};
         tree_->knnSearch(&q_buf_ptr[j],
                          kneighbors,
@@ -297,7 +288,7 @@ public:
     IndexType* o_i_ptr =
         static_cast<IndexType*>(original_inverse.request().ptr);
 
-    const IndexType index_t_dim{static_cast<IndexType>(dim)};
+    const IndexType index_t_dim{static_cast<IndexType>(dim_)};
     auto searchradius = [&](int start, int end, int current_tid) {
       for (IndexType i{static_cast<IndexType>(start)};
            i < static_cast<IndexType>(end);
@@ -407,9 +398,9 @@ public:
   }
 };
 
-template<typename T, int dim, unsigned int metric>
+template<typename T, unsigned int metric>
 void add_kdt_pyclass(py::module_& m, const char* class_name) {
-  using KDT = PyKDT<T, dim, metric>;
+  using KDT = PyKDT<T, metric>;
 
   py::class_<KDT> klasse(m, class_name);
 

@@ -97,10 +97,9 @@ def core_class_str_and_data(tree_data, metric):
 
     # extract info
     data_t = np2napf_dtypes[dtypestr]
-    dim = arr.shape[1]
     metric = validate_metric_input(metric)
 
-    return f"KDT{data_t}D{dim}L{metric}", arr
+    return f"KDT{data_t}L{metric}", arr
 
 
 class KDT:

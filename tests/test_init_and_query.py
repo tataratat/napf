@@ -58,6 +58,22 @@ class InitAndQueryTest(unittest.TestCase):
             assert np.isclose(dist[0], 0), f"wrong dist query for {qname}"
             assert ids[0] == n_data, f"wrong index query for {qname}"
 
+            # test knn_search
+            dist, ids = kdt.knn_search(kdt.tree_data, 1, nthread=2)
+            assert np.isclose(
+                dist.sum(), 0
+            ), f"wrong dist query for {qname}, dim {d}"
+
+            # skip integer types for index check
+            # as it is too easy for them to have duplicates.
+            # with default options of nanoflann, this will return smaller index
+            if dt.startswith("int"):
+                continue
+
+            assert np.all(
+                ids.ravel() == np.arange(len(kdt.tree_data))
+            ), f"wrong index query for {qname}, dim {d}"
+
 
 if __name__ == "__main__":
     unittest.main()
