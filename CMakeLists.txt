@@ -28,6 +28,12 @@ set(CXX_HEADERS src/napf.hpp)
 add_library(napf INTERFACE)
 add_library(napf::napf ALIAS napf)
 
+# basic path
+target_include_directories(napf
+    INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:${incl_dest}>)
+
 # try to use installed nanoflann.
 # else, include the one in the third_party
 find_package(nanoflann QUIET)
@@ -38,9 +44,7 @@ else()
   set(CXX_HEADERS ${CXX_HEADERS} third_party/nanoflann.hpp)
   target_include_directories(napf
       INTERFACE
-          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
-          $<INSTALL_INTERFACE:${incl_dest}>)
+          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>)
 endif()
 target_compile_features(napf INTERFACE cxx_std_11)
 
