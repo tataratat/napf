@@ -35,12 +35,12 @@ repos:
     args: [--py36-plus]
 
 - repo: https://github.com/PyCQA/isort
-  rev: "5.12.0"
+  rev: "5.13.2"
   hooks:
   - id: isort
 
 - repo: https://github.com/psf/black
-  rev: "23.10.1"
+  rev: "23.12.1"
   hooks:
   - id: black
     args: [--line-length=79]
@@ -52,7 +52,7 @@ repos:
     args: [--extend-ignore=E203]
 
 - repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v17.0.4
+  rev: v17.0.6
   hooks:
   - id: clang-format
     types_or: [c++]
