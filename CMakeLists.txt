@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 project(napf VERSION 0.0.0 LANGUAGES CXX)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -22,18 +22,31 @@ set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
 set(namespace "${PROJECT_NAME}::")
 
 # sources
-set(CXX_HEADERS src/napf.hpp third_party/nanoflann.hpp)
+set(CXX_HEADERS src/napf.hpp)
 
 # Interface Library, since it's header only lib
 add_library(napf INTERFACE)
 add_library(napf::napf ALIAS napf)
+
+# basic path
 target_include_directories(napf
     INTERFACE
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>
         $<INSTALL_INTERFACE:${incl_dest}>)
+
+# try to use installed nanoflann.
+# else, include the one in the third_party
+find_package(nanoflann QUIET)
+if(nanoflann_FOUND AND nanoflann_VERSION VERSION_GREATER_EQUAL "1.5.0")
+  message("nanoflann found - napf will link to nanoflann found in system.")
+  target_link_libraries(napf INTERFACE nanoflann::nanoflann)
+else()
+  set(CXX_HEADERS ${CXX_HEADERS} third_party/nanoflann.hpp)
+  target_include_directories(napf
+      INTERFACE
+          $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/third_party>)
+endif()
 target_compile_features(napf INTERFACE cxx_std_11)
-#target_compile_options(napf PRIVATE -O3) # everyone can enjoy optimization
 
 if(BUILD_FORTRAN_MODULE)
   message("*** building additional fortran module ***")
