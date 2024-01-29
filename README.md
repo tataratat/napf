@@ -29,7 +29,7 @@ queries = <query points in 2D array>
 
 kdt = napf.KDT(tree_data=data, metric=1)
 
-indices, distances = kdt.knn_search(
+distances, indices = kdt.knn_search(
     queries=queries,
     kneighbors=3,
     nthread=4,
