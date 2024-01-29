@@ -5,10 +5,9 @@
 [nanoflann](https://github.com/jlblancoc/nanoflann) wrappers for python and maybe fortran.
 
 ## python
-As `nanoflann` offers template classes, separate classes are implemented in `napf` for each ___{datatype, data dimension, distance metric}___. All the search functions are equipped with multi-thread execution. Uses [numpy.ndarray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) for data input and output.
+As `nanoflann` offers template classes, separate classes are implemented in `napf` for each ___{datatype, distance metric}___. All the search functions are equipped with multi-thread execution. Uses [numpy.ndarray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) for data input and output.
 Currently, the combinations of following options are supported:
 - `data type`: {__double__, __float__, __int__, __long__}  _(corresponds to {np.float64, np.float32, np.int32, np.int64})_
-- `data dimension`: {__1__, __2__, __3__, __4__, __5__, __6__, __7__, __8__, __9__, __10__, __11__, __12__, __13__, __14__, __15__, __16__, __17__, __18__, __19__, __20__}
 - `distance metric`: {__L1__, __L2__}
 Note that functions return squared distances, when you use the __L2__ metric.
 
@@ -38,8 +37,7 @@ distances, indices = kdt.knn_search(
 ```
 
 ## fortran
-maybe...
-
+If you need fortran bindings, please let us know by creating an [issue](https://gthub.com/tataratat/napf/issues).
 
 ## Documentation
 This package uses a `sphinx` based documentation. An online version of the documentation can be found at [napf - documentation](https://tataratat.github.io/napf/).
@@ -47,7 +45,7 @@ This package uses a `sphinx` based documentation. An online version of the docum
 If you want to build the documentation yourself use the following commands in the package root directory.
 ```bash
 pip install -r ./docs/requirements.txt
-sphinx-build -W -b html docs/source docs/build -j auto
+sphinx-build -W -b html docs/source docs/build
 ```
 
 You will find the documentation in the docs/build folder.
