@@ -3,7 +3,7 @@
  *
  * Copyright 2008-2009  Marius Muja (mariusm@cs.ubc.ca). All rights reserved.
  * Copyright 2008-2009  David G. Lowe (lowe@cs.ubc.ca). All rights reserved.
- * Copyright 2011-2023  Jose Luis Blanco (joseluisblancoc@gmail.com).
+ * Copyright 2011-2024  Jose Luis Blanco (joseluisblancoc@gmail.com).
  *   All rights reserved.
  *
  * THE BSD LICENSE
@@ -49,8 +49,8 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>  // for abs()
-#include <cstdlib>  // for abs()
 #include <cstdint>
+#include <cstdlib>  // for abs()
 #include <functional>  // std::reference_wrapper
 #include <future>
 #include <istream>
@@ -61,7 +61,7 @@
 #include <vector>
 
 /** Library version: 0xMmP (M=Major,m=minor,P=patch) */
-#define NANOFLANN_VERSION 0x151
+#define NANOFLANN_VERSION 0x155
 
 // Avoid conflicting declaration of min/max macros in Windows headers
 #if !defined(NOMINMAX) && \
@@ -273,8 +273,7 @@ class RKNNResultSet
         indices = indices_;
         dists   = dists_;
         count   = 0;
-        if (capacity)
-            dists[capacity - 1] = maximumSearchDistanceSquared;
+        if (capacity) dists[capacity - 1] = maximumSearchDistanceSquared;
     }
 
     CountType size() const { return count; }
@@ -832,7 +831,7 @@ struct SearchParameters
  */
 class PooledAllocator
 {
-    static constexpr size_t WORDSIZE  = 16;  //WORDSIZE must >= 8
+    static constexpr size_t WORDSIZE  = 16;  // WORDSIZE must >= 8
     static constexpr size_t BLOCKSIZE = 8192;
 
     /* We maintain memory alignment to word boundaries by requiring that all
@@ -903,9 +902,7 @@ class PooledAllocator
 
             /* Allocate new storage. */
             const Size blocksize =
-                size > BLOCKSIZE
-                ? size + WORDSIZE
-                : BLOCKSIZE + WORDSIZE;
+                size > BLOCKSIZE ? size + WORDSIZE : BLOCKSIZE + WORDSIZE;
 
             // use the standard C malloc to allocate memory
             void* m = ::malloc(blocksize);
@@ -920,7 +917,7 @@ class PooledAllocator
             base_                     = m;
 
             remaining_ = blocksize - WORDSIZE;
-            loc_ = static_cast<char*>(m) + WORDSIZE;
+            loc_       = static_cast<char*>(m) + WORDSIZE;
         }
         void* rloc = loc_;
         loc_       = static_cast<char*>(loc_) + size;
@@ -1229,28 +1226,13 @@ class KDTreeBaseClass
 
             node->node_type.sub.divfeat = cutfeat;
 
-            std::future<NodePtr> left_future, right_future;
-
-            BoundingBox left_bbox(bbox);
-            left_bbox[cutfeat].high = cutval;
-            if (++thread_count < n_thread_build_)
-            {
-                left_future = std::async(
-                    std::launch::async, &KDTreeBaseClass::divideTreeConcurrent,
-                    this, std::ref(obj), left, left + idx, std::ref(left_bbox),
-                    std::ref(thread_count), std::ref(mutex));
-            }
-            else
-            {
-                --thread_count;
-                node->child1 = this->divideTreeConcurrent(
-                    obj, left, left + idx, left_bbox, thread_count, mutex);
-            }
+            std::future<NodePtr> right_future;
 
             BoundingBox right_bbox(bbox);
             right_bbox[cutfeat].low = cutval;
             if (++thread_count < n_thread_build_)
             {
+                // Concurrent right sub-tree
                 right_future = std::async(
                     std::launch::async, &KDTreeBaseClass::divideTreeConcurrent,
                     this, std::ref(obj), left + idx, right,
@@ -1260,19 +1242,23 @@ class KDTreeBaseClass
             else
             {
                 --thread_count;
-                node->child2 = this->divideTreeConcurrent(
-                    obj, left + idx, right, right_bbox, thread_count, mutex);
             }
 
-            if (left_future.valid())
-            {
-                node->child1 = left_future.get();
-                --thread_count;
-            }
+            BoundingBox left_bbox(bbox);
+            left_bbox[cutfeat].high = cutval;
+            node->child1            = this->divideTreeConcurrent(
+                           obj, left, left + idx, left_bbox, thread_count, mutex);
+
             if (right_future.valid())
             {
+                // Block and wait for concurrent right sub-tree
                 node->child2 = right_future.get();
                 --thread_count;
+            }
+            else
+            {
+                node->child2 = this->divideTreeConcurrent(
+                    obj, left + idx, right, right_bbox, thread_count, mutex);
             }
 
             node->node_type.sub.divlow  = left_bbox[cutfeat].high;
@@ -1302,7 +1288,7 @@ class KDTreeBaseClass
         }
         ElementType max_spread = -1;
         cutfeat                = 0;
-        ElementType   min_elem = 0, max_elem = 0;
+        ElementType min_elem = 0, max_elem = 0;
         for (Dimension i = 0; i < dims; ++i)
         {
             ElementType span = bbox[i].high - bbox[i].low;
@@ -1315,8 +1301,8 @@ class KDTreeBaseClass
                 {
                     cutfeat    = i;
                     max_spread = spread;
-                    min_elem = min_elem_;
-                    max_elem = max_elem_;
+                    min_elem   = min_elem_;
+                    max_elem   = max_elem_;
                 }
             }
         }
@@ -1641,10 +1627,14 @@ class KDTreeSingleIndexAdaptor
         }
         else
         {
+#ifndef NANOFLANN_NO_THREADS
             std::atomic<unsigned int> thread_count(0u);
             std::mutex                mutex;
             Base::root_node_ = this->divideTreeConcurrent(
                 *this, 0, Base::size_, Base::root_bbox_, thread_count, mutex);
+#else /* NANOFLANN_NO_THREADS */
+            throw std::runtime_error("Multithreading is disabled");
+#endif /* NANOFLANN_NO_THREADS */
         }
     }
 
@@ -2104,10 +2094,14 @@ class KDTreeSingleIndexDynamicAdaptor_
         }
         else
         {
+#ifndef NANOFLANN_NO_THREADS
             std::atomic<unsigned int> thread_count(0u);
             std::mutex                mutex;
             Base::root_node_ = this->divideTreeConcurrent(
                 *this, 0, Base::size_, Base::root_bbox_, thread_count, mutex);
+#else /* NANOFLANN_NO_THREADS */
+            throw std::runtime_error("Multithreading is disabled");
+#endif /* NANOFLANN_NO_THREADS */
         }
     }
 

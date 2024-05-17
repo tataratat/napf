@@ -285,7 +285,7 @@ class KDT:
 
         Returns
         --------
-        ids_and_distances: tuple
+        distances_and_ids: tuple
           ((m, 1) np.ndarray - double dists,)
            (m, 1) np.ndarray - uint ids)
         """
