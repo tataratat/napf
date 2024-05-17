@@ -21,11 +21,11 @@ jobs:
       with:
         submodules: recursive
     - name: build wheels
-      uses: pypa/cibuildwheel@v2.16.2
+      uses: pypa/cibuildwheel@v2.18
       env:
         CIBW_ARCHS: ${{ matrix.arch }}
         CIBW_BUILD: ${{ matrix.cw_build }}
-        CIBW_TEST_SKIP: "*-macosx_arm64"
+        CIBW_TEST_SKIP: "*-macosx_x86_64"
 
     - uses: actions/upload-artifact@v3
       with:
@@ -45,7 +45,7 @@ jobs:
       with:
         submodules: recursive
     - name: build wheels
-      uses: pypa/cibuildwheel@v2.16.2
+      uses: pypa/cibuildwheel@v2.18
       env:
         CIBW_ARCHS: ${{ matrix.arch }}
         CIBW_BUILD: ${{ matrix.cw_build }}
@@ -81,7 +81,7 @@ jobs:
         platforms: arm64, ppc64le
 
     - name: build wheels
-      uses: pypa/cibuildwheel@v2.16.2
+      uses: pypa/cibuildwheel@v2.18
       env:
         CIBW_ARCHS: ${{ matrix.arch }}
         CIBW_BUILD: ${{ matrix.cw_build }}
@@ -104,7 +104,7 @@ jobs:
       with:
         submodules: recursive
     - name: build wheels
-      uses: pypa/cibuildwheel@v2.16.2
+      uses: pypa/cibuildwheel@v2.18
       env:
         CIBW_ARCHS: ${{ matrix.arch }}
 
