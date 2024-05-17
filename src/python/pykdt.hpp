@@ -123,8 +123,7 @@ public:
     DistT* d_buf_ptr = static_cast<DistT*>(d_buf.ptr);
 
     if (kneighbors > static_cast<int>(datalen_)) {
-      std::cout << "WARNING - "
-                << "kneighbors (" << kneighbors
+      std::cout << "WARNING - " << "kneighbors (" << kneighbors
                 << ") is bigger than number of tree data (" << datalen_ << "! "
                 << "Returning arrays `[:, " << datalen_ - kneighbors
                 << ":]` entries will be filled with random indices."
@@ -352,9 +351,8 @@ public:
     // execution ending error is too brutal and merciless
     // print warning and return empty
     if (qlen != rlen) {
-      std::cout << "CRITICAL WARNING - "
-                << "query length (" << qlen << ") and radii length (" << rlen
-                << ") differ! "
+      std::cout << "CRITICAL WARNING - " << "query length (" << qlen
+                << ") and radii length (" << rlen << ") differ! "
                 << "returning empty tuple." << std::endl;
 
       return py::tuple{};
