@@ -3,8 +3,10 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <thread>
+#include <type_traits>
 #include <utility>
 
 #include <pybind11/numpy.h>
@@ -29,6 +31,16 @@ using UIntVectorVector = std::vector<UIntVector>;
 using IndexType = typename UIntVector::value_type;
 using IndexVector = UIntVector;
 using IndexVectorVector = UIntVectorVector;
+
+// helper function to get dummy values
+template<typename Type>
+Type max_and_negative_if_signed() {
+  Type max_val = std::numeric_limits<Type>::max();
+  if (std::is_signed<Type>::value) {
+    max_val = -max_val;
+  }
+  return max_val;
+}
 
 template<typename DataT, unsigned int metric>
 class PyKDT {
@@ -201,6 +213,58 @@ public:
     return py::make_tuple<py::return_value_policy::move>(out_indices, out_dist);
   }
 
+  /* radius knn search */
+  py::tuple rknn_search(const py::array_t<DataT> qpts,
+                        const DistT radius,
+                        const int n_nearest,
+                        const int nthread) {
+
+    // in
+    const py::buffer_info q_buf = qpts.request();
+    const DataT* q_buf_ptr = static_cast<DataT*>(q_buf.ptr);
+    const int qlen = q_buf.shape[0];
+
+    // out
+    py::array_t<IndexType> indices({qlen, n_nearest});
+    py::array_t<DistT> distances({qlen, n_nearest});
+    // get pointers
+    IndexType* i_ptr = static_cast<IndexType*>(indices.request().ptr);
+    DistT* d_ptr = static_cast<DistT*>(distances.request().ptr);
+
+    auto searchradiusknn = [&](int begin, int end, int) {
+      // get pointers for this chunk/thread
+      IndexType* t_i_ptr = &i_ptr[begin * dim_];
+      DistT* t_d_ptr = &d_ptr[begin * dim_];
+      // dummpy values - put max value
+
+      const DistT dummy_dist = max_and_negative_if_signed<DistT>();
+      const IndexType dummy_index = max_and_negative_if_signed<IndexType>();
+      for (int i{begin}; i < end; i++) {
+
+        // call
+        const auto n_matches = tree_->rknnSearch(&q_buf_ptr[i * dim_],
+                                                 n_nearest,
+                                                 t_i_ptr,
+                                                 t_d_ptr,
+                                                 radius);
+
+        // in case nmatches < n_nearest, we fill the rest with dummy values
+        for (int j{static_cast<int>(n_matches)}; j < n_nearest; ++j) {
+          t_i_ptr[j] = dummy_index;
+          t_d_ptr[j] = dummy_dist;
+        }
+
+        // next pointers
+        t_i_ptr += n_nearest;
+        t_d_ptr += n_nearest;
+      }
+    };
+
+    nthread_execution(searchradiusknn, qlen, nthread);
+
+    return py::make_tuple<py::return_value_policy::move>(indices, distances);
+  }
+
   /// @brief
   /// @param qpts
   /// @param radius
@@ -257,8 +321,8 @@ public:
     return out_indices;
   }
 
-  /// @brief unique points, indices of unique points, inverse indices to create
-  /// original points base on unique points.
+  /// @brief unique points, indices of unique points, inverse indices to
+  /// create original points base on unique points.
   /// @param radius
   /// @param return_intersection returns neighbor
   /// @param nthread
@@ -312,7 +376,8 @@ public:
             this_intersection.emplace_back(match.first);
           }
           std::sort(this_intersection.begin(), this_intersection.end());
-          // set inverse_ids - it is the smallest neighbor (intersection) index
+          // set inverse_ids - it is the smallest neighbor (intersection)
+          // index
           unique_id = this_intersection[0];
         } else {
           // here, we'd only need min.
@@ -431,6 +496,13 @@ void add_kdt_pyclass(py::module_& m, const char* class_name) {
            py::arg("queries"),
            py::arg("radius"),
            py::arg("return_sorted"),
+           py::arg("nthread"),
+           py::return_value_policy::move)
+      .def("rknn_search",
+           &KDT::rknn_search,
+           py::arg("queries"),
+           py::arg("radius"),
+           py::arg("n_nearest"),
            py::arg("nthread"),
            py::return_value_policy::move)
       .def("query_ball_point",
