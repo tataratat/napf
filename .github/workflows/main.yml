@@ -126,6 +126,8 @@ jobs:
   upload_pypi:
     needs: [macos_wheel_m, macos_wheel_intel, linux_wheel, windows_wheel, source_dist]
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     # try to publish only if this is a push to stable branch
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
