@@ -252,7 +252,7 @@ class KDT:
 
         Parameters
         -----------
-        queires: (m, d) np.ndarray
+        queries: (m, d) np.ndarray
           Data type will be casted to the same type as `tree_data`.
         kneighbors: int
         nthread: int
@@ -405,7 +405,7 @@ class KDT:
         # input size check
         if len(queries) != len(radii):
             raise ValueError(
-                f"Input size mismatch between queires ({len(queries)}) "
+                f"Input size mismatch between queries ({len(queries)}) "
                 f" and radii ({len(radii)})."
                 "They should be the same."
             )
@@ -447,7 +447,7 @@ class KDT:
           Same as kdt.tree_data[unique_ids].
         unique_ids: np.ndarray
           Indices of unique entries from tree data.
-          First occurance is considered unique.
+          First occurrence is considered unique.
         inverse_ids: np.ndarray
           Indices to reconstruct original tree_data with
           unique_data. kdt.tree_data == unique_data[inverse_ids]
