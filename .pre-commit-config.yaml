@@ -6,10 +6,8 @@
 
 # use default options for ci
 ci:
-  autoupdate_schedule: "monthly"
+  autoupdate_schedule: "weekly"
   submodules: false
-
-exclude: "third_party/nanoflann.hpp"
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -28,31 +26,31 @@ repos:
   - id: requirements-txt-fixer
   - id: trailing-whitespace
 
-- repo: https://github.com/asottile/pyupgrade
-  rev: "v3.15.2"
-  hooks:
-  - id: pyupgrade
-    args: [--py36-plus]
-
-- repo: https://github.com/PyCQA/isort
-  rev: "5.13.2"
-  hooks:
-  - id: isort
-
 - repo: https://github.com/psf/black
   rev: "24.4.2"
   hooks:
   - id: black
-    args: [--line-length=79]
+    additional_dependencies: [tomli]
 
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.0.0
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.5.4
   hooks:
-  - id: flake8
-    args: [--extend-ignore=E203]
+    - id: ruff
+      args: [--fix, --exit-non-zero-on-fix]
 
 - repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.4
+  rev: v18.1.8
   hooks:
   - id: clang-format
     types_or: [c++]
+
+- repo: https://github.com/cheshirekow/cmake-format-precommit
+  rev: "v0.6.13"
+  hooks:
+  - id: cmake-format
+
+- repo: https://github.com/keewis/blackdoc
+  rev: v0.3.9
+  hooks:
+  - id: blackdoc
+    additional_dependencies: [tomli]

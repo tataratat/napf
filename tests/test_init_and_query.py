@@ -92,7 +92,7 @@ class InitAndQueryTest(unittest.TestCase):
             assert ids.shape[1] == nn
             assert np.isclose(dists.sum(), 0)
 
-            # with five, only first two queires are zero and last three are
+            # with five, only first two queries are zero and last three are
             # dummy values
             nn = 5
             ids, dists = kdt.rknn_search(random_data, 1e-10, 5)
