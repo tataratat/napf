@@ -325,6 +325,36 @@ class KDT:
             nthread,
         )
 
+    def rknn_search(self, queries, radius, n_nearest, nthread=None):
+        """
+        Searches for k-nearest neighbors within the radius.
+        With insufficient neighbors, rest of the return values will have dummy
+        filled in - they will be the maximum value of each data type.
+        If the dtype is signed, it will have a negative value.
+
+        Parameters
+        ----------
+        queries: (m, d) np.ndarray
+        radius: float
+        n_nearest: int
+        nthread: int
+
+        Returns
+        -------
+        ids_and_distances: tuple
+          ((m, 1) np.ndarray - uint ids,
+           (m, 1) np.ndarray - double dists)
+        """
+        if nthread is None:
+            nthread = self.nthread
+
+        return self.core_tree.rknn_search(
+            enforce_contiguous(queries, self.dtype),
+            radius,
+            n_nearest,
+            nthread,
+        )
+
     def query_ball_point(self, queries, radius, return_sorted, nthread=None):
         """
         scipy-like KDTree query_ball_point call.
