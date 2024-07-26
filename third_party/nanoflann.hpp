@@ -145,6 +145,34 @@ assign(Container& c, const size_t nElements, const T& value) {
     c[i] = value;
 }
 
+/** operator "<" for std::sort() */
+struct IndexDist_Sorter {
+  /** PairType will be typically: ResultItem<IndexType,DistanceType> */
+  template<typename PairType>
+  bool operator()(const PairType& p1, const PairType& p2) const {
+    return p1.second < p2.second;
+  }
+};
+
+/**
+ * Each result element in RadiusResultSet. Note that distances and indices
+ * are named `first` and `second` to keep backward-compatibility with the
+ * `std::pair<>` type used in the past. In contrast, this structure is ensured
+ * to be `std::is_standard_layout` so it can be used in wrappers to other
+ * languages.
+ * See: https://github.com/jlblancoc/nanoflann/issues/166
+ */
+template<typename IndexType = size_t, typename DistanceType = double>
+struct ResultItem {
+  ResultItem() = default;
+  ResultItem(const IndexType index, const DistanceType distance)
+      : first(index),
+        second(distance) {}
+
+  IndexType first;     //!< Index of the sample in the dataset
+  DistanceType second; //!< Distance from sample to query point
+};
+
 /** @addtogroup result_sets_grp Result set classes
  *  @{ */
 
@@ -218,6 +246,10 @@ public:
   }
 
   DistanceType worstDist() const { return dists[capacity - 1]; }
+
+  void sort() {
+    // already sorted
+  }
 };
 
 /** Result set for RKNN searches (N-closest neighbors with a maximum radius) */
@@ -293,34 +325,10 @@ public:
   }
 
   DistanceType worstDist() const { return dists[capacity - 1]; }
-};
 
-/** operator "<" for std::sort() */
-struct IndexDist_Sorter {
-  /** PairType will be typically: ResultItem<IndexType,DistanceType> */
-  template<typename PairType>
-  bool operator()(const PairType& p1, const PairType& p2) const {
-    return p1.second < p2.second;
+  void sort() {
+    // already sorted
   }
-};
-
-/**
- * Each result element in RadiusResultSet. Note that distances and indices
- * are named `first` and `second` to keep backward-compatibility with the
- * `std::pair<>` type used in the past. In contrast, this structure is ensured
- * to be `std::is_standard_layout` so it can be used in wrappers to other
- * languages.
- * See: https://github.com/jlblancoc/nanoflann/issues/166
- */
-template<typename IndexType = size_t, typename DistanceType = double>
-struct ResultItem {
-  ResultItem() = default;
-  ResultItem(const IndexType index, const DistanceType distance)
-      : first(index),
-        second(distance) {}
-
-  IndexType first;     //!< Index of the sample in the dataset
-  DistanceType second; //!< Distance from sample to query point
 };
 
 /**
@@ -378,6 +386,12 @@ public:
                                m_indices_dists.end(),
                                IndexDist_Sorter());
     return *it;
+  }
+
+  void sort() {
+    std::sort(m_indices_dists.begin(),
+              m_indices_dists.end(),
+              IndexDist_Sorter());
   }
 };
 
@@ -895,7 +909,7 @@ template<class Derived,
          typename Distance,
          class DatasetAdaptor,
          int32_t DIM = -1,
-         typename IndexType = uint32_t>
+         typename index_t = uint32_t>
 class KDTreeBaseClass {
 public:
   /** Frees the previously-built index. Automatically called within
@@ -908,6 +922,7 @@ public:
 
   using ElementType = typename Distance::ElementType;
   using DistanceType = typename Distance::DistanceType;
+  using IndexType = index_t;
 
   /**
    *  Array of indices to vectors in the dataset_.
@@ -1373,7 +1388,7 @@ public:
  * non-virtual, inlined methods):
  *
  *  \code
- *   // Must return the number of data points
+ *   // Must return the number of data poins
  *   size_t kdtree_get_point_count() const { ... }
  *
  *
@@ -1405,21 +1420,19 @@ public:
 template<typename Distance,
          class DatasetAdaptor,
          int32_t DIM = -1,
-         typename IndexType = uint32_t>
+         typename index_t = uint32_t>
 class KDTreeSingleIndexAdaptor
     : public KDTreeBaseClass<
-          KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>,
+          KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, index_t>,
           Distance,
           DatasetAdaptor,
           DIM,
-          IndexType> {
+          index_t> {
 public:
   /** Deleted copy constructor*/
   explicit KDTreeSingleIndexAdaptor(
-      const KDTreeSingleIndexAdaptor<Distance,
-                                     DatasetAdaptor,
-                                     DIM,
-                                     IndexType>&) = delete;
+      const KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, index_t>&) =
+      delete;
 
   /** The data source used by this index */
   const DatasetAdaptor& dataset_;
@@ -1430,11 +1443,11 @@ public:
 
   using Base = typename nanoflann::KDTreeBaseClass<
       nanoflann::
-          KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>,
+          KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, index_t>,
       Distance,
       DatasetAdaptor,
       DIM,
-      IndexType>;
+      index_t>;
 
   using Offset = typename Base::Offset;
   using Size = typename Base::Size;
@@ -1442,6 +1455,7 @@ public:
 
   using ElementType = typename Base::ElementType;
   using DistanceType = typename Base::DistanceType;
+  using IndexType = typename Base::IndexType;
 
   using Node = typename Base::Node;
   using NodePtr = Node*;
@@ -1592,6 +1606,10 @@ public:
     assign(dists, (DIM > 0 ? DIM : Base::dim_), zero);
     DistanceType dist = this->computeInitialDistances(*this, vec, dists);
     searchLevel(result, vec, Base::root_node_, dist, dists, epsError);
+
+    if (searchParams.sorted)
+      result.sort();
+
     return result.full();
   }
 
@@ -1647,8 +1665,6 @@ public:
     RadiusResultSet<DistanceType, IndexType> resultSet(radius, IndicesDists);
     const Size nFound =
         radiusSearchCustomCallback(query_point, resultSet, searchParams);
-    if (searchParams.sorted)
-      std::sort(IndicesDists.begin(), IndicesDists.end(), IndexDist_Sorter());
     return nFound;
   }
 
@@ -1832,7 +1848,7 @@ public:
  * non-virtual, inlined methods):
  *
  *  \code
- *   // Must return the number of data points
+ *   // Must return the number of data poins
  *   size_t kdtree_get_point_count() const { ... }
  *
  *   // Must return the dim'th component of the idx'th point in the class:
@@ -1958,7 +1974,7 @@ public:
   KDTreeSingleIndexDynamicAdaptor_(
       const KDTreeSingleIndexDynamicAdaptor_& rhs) = default;
 
-  /** Assignment operator definition */
+  /** Assignment operator definiton */
   KDTreeSingleIndexDynamicAdaptor_
   operator=(const KDTreeSingleIndexDynamicAdaptor_& rhs) {
     KDTreeSingleIndexDynamicAdaptor_ tmp(rhs);
@@ -2101,8 +2117,6 @@ public:
     RadiusResultSet<DistanceType, IndexType> resultSet(radius, IndicesDists);
     const size_t nFound =
         radiusSearchCustomCallback(query_point, resultSet, searchParams);
-    if (searchParams.sorted)
-      std::sort(IndicesDists.begin(), IndicesDists.end(), IndexDist_Sorter());
     return nFound;
   }
 
