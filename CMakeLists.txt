@@ -9,9 +9,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 # options
-option(BUILD_EXAMPLES "build examples" ON)
-option(BUILD_FORTRAN_MODULE "build fortran module" ON)
-option(SPLINEPY_EXT "add splinepy extension" ON)
+option(NAPF_BUILD_PYTHON "build python module" ON)
 
 # config
 set(exe_dest "bin")
@@ -49,19 +47,9 @@ else()
 endif()
 target_compile_features(napf INTERFACE cxx_std_11)
 
-if(BUILD_FORTRAN_MODULE)
-  message("*** building additional fortran module ***")
-  message("*** ------ NOT IMPLEMENTED ----------- ***")
-endif(BUILD_FORTRAN_MODULE)
-
-if(BUILD_EXAMPLES)
-  message("*** building examples ***")
-  message("*** ------ NOT IMPLEMENTED ----------- ***")
-endif(BUILD_EXAMPLES)
-
-if(SPLINEPY_EXT)
-  target_compile_definitions(napf INTERFACE -DSPLINEPYEXT)
-endif(SPLINEPY_EXT)
+if(NAPF_BUILD_PYTHON)
+  add_subdirectory(src/python)
+endif()
 
 # configure config files
 include(CMakePackageConfigHelpers)
