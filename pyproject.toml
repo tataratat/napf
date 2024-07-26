@@ -36,6 +36,12 @@ test-command = "python {project}/tests/test_init_and_query.py"
 file = "README.md"
 content-type = "text/markdown"
 
+[tool.cibuildwheel.macos]
+skip = "pp*"
+
+[tool.cibuildwheel.linux]
+skip = "pp*"
+
 [tool.cibuildwheel.windows]
 skip = "pp*"
 
