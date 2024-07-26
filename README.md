@@ -1,8 +1,10 @@
-# napf
+<p align="center"><img src="https://github.com/tataratat/napf/raw/main/docs/source/_static/napf.png" width="50%" title="nurbs"></p>
+
+**napf - [nanoflann](https://github.com/jlblancoc/nanoflann) wrappers for python and maybe fortran**
+
 [![main](https://github.com/tataratat/napf/actions/workflows/main.yml/badge.svg)](https://github.com/tataratat/napf/actions/workflows/main.yml)
 [![PyPI version](https://badge.fury.io/py/napf.svg)](https://badge.fury.io/py/napf)
 
-[nanoflann](https://github.com/jlblancoc/nanoflann) wrappers for python and maybe fortran.
 
 ## python
 As `nanoflann` offers template classes, separate classes are implemented in `napf` for each ___{datatype, distance metric}___. All the search functions are equipped with multi-thread execution. Uses [numpy.ndarray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) for data input and output.
